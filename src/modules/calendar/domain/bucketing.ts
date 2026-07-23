@@ -11,18 +11,21 @@ function toDateString(d: Date): string {
 }
 
 export function getMonthRange(year: number, month: number): { start: Date; end: Date } {
-  const start = new Date(year, month, 1);
-  const end = new Date(year, month + 1, 0);
+  const start = new Date(Date.UTC(year, month, 1));
+  const end = new Date(Date.UTC(year, month + 1, 0));
   return { start, end };
 }
 
 export function getWeekRange(date: Date): { start: Date; end: Date } {
-  const day = date.getDay(); // 0 = Sunday
+  // Read the calendar date using LOCAL getters, since callers may construct
+  // `date` from a local-time string (e.g. 'YYYY-MM-DDTHH:mm:ss' with no
+  // timezone). We then rebuild start/end as UTC-midnight Date objects so
+  // that .toISOString() reads back the intended calendar date regardless
+  // of the host machine's timezone.
+  const day = date.getDay(); // 0 = Sunday (local)
   const diffToMonday = day === 0 ? -6 : 1 - day;
-  const start = new Date(date);
-  start.setDate(date.getDate() + diffToMonday);
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
+  const start = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate() + diffToMonday));
+  const end = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate() + diffToMonday + 6));
   return { start, end };
 }
 
@@ -36,7 +39,7 @@ export function bucketNotesByDay(notes: Note[], rangeStart: Date, rangeEnd: Date
       date: dateStr,
       notes: notes.filter((n) => n.dueDate === dateStr),
     });
-    cursor.setDate(cursor.getDate() + 1);
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
 
   return buckets;
