@@ -7,9 +7,10 @@ function toChecklistItem(row: unknown): ChecklistItem {
   return { id: parsed.id, noteId: parsed.note_id, text: parsed.text, done: parsed.done, order: parsed.order };
 }
 
-function toNote(row: any): Note {
+function toNote(row: unknown): Note {
   const parsed = noteRowSchema.parse(row);
-  const checklist = Array.isArray(row.checklist_items) ? row.checklist_items.map(toChecklistItem) : [];
+  const checklistItems = (row as { checklist_items?: unknown }).checklist_items;
+  const checklist = Array.isArray(checklistItems) ? checklistItems.map(toChecklistItem) : [];
   return {
     id: parsed.id,
     columnId: parsed.column_id,
