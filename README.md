@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kanban Post-it
 
-## Getting Started
+Gestión de proyectos con tableros Kanban estilo post-it y vista de Calendario (Mes/Semana).
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Next.js (App Router) + TypeScript, Tailwind CSS, Supabase (Postgres + Auth), Zod, TanStack Query, dnd-kit.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Desarrollo local
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. `npm install`
+2. Copiar `.env.local.example` a `.env.local` y completar con las credenciales de tu proyecto Supabase
+3. Aplicar `supabase/migrations/0001_init.sql` en el SQL Editor de Supabase
+4. Crear un usuario en Supabase Auth (Authentication → Users → Add user, con "Auto Confirm User")
+5. `npm run dev`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Tests
 
-## Learn More
+- `npm run test` — unit tests (Vitest)
+- `npx playwright test` — e2e (requiere `E2E_EMAIL` / `E2E_PASSWORD` de un usuario real en Supabase Auth)
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Desplegar en Vercel (mismo flujo que KairOS): conectar el repo, configurar
+`NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` como variables de entorno de producción.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Roadmap (fuera de v1)
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Vista Gantt
+- Sincronización con Google Calendar
+- Multi-usuario (invitaciones, roles) y multi-tenant (organizaciones)
+- Navegación mes/semana anterior-siguiente en el Calendario
+- UI para renombrar/borrar columnas
