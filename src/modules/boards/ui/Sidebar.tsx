@@ -40,7 +40,7 @@ export function Sidebar() {
     });
   }
 
-  const background = boardColor ? getBoardPalette(boardColor).dark : undefined;
+  const background = boardColor ? getBoardPalette(boardColor).medium : undefined;
 
   if (collapsed) {
     return (

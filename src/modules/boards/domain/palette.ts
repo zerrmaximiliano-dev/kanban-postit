@@ -80,11 +80,19 @@ export function getBoardPalette(baseColor: string | null): BoardPalette {
   };
 }
 
+// The 12-hue color wheel: each preset is the "true" hue from the wheel;
+// getBoardPalette derives the dark/medium/light tones from it.
 export const BOARD_COLOR_PRESETS = [
-  '#5B6B8C', // slate blue (default)
-  '#2E7D5B', // green
-  '#B5541E', // terracotta
-  '#7C4FA0', // purple
-  '#C0392B', // red
-  '#1E6091', // ocean blue
+  { name: 'Rojo', color: '#D0342C' },
+  { name: 'Rojo anaranjado', color: '#E4572E' },
+  { name: 'Anaranjado', color: '#F2811D' },
+  { name: 'Amarillo anaranjado', color: '#F4B400' },
+  { name: 'Amarillo', color: '#F2CB05' },
+  { name: 'Amarillo verdoso', color: '#AFCA0B' },
+  { name: 'Verde', color: '#3C9F40' },
+  { name: 'Azul verdoso', color: '#12897F' },
+  { name: 'Azul', color: '#1E70B8' },
+  { name: 'Azul morado', color: '#3D4FA0' },
+  { name: 'Morado', color: '#6A3FA0' },
+  { name: 'Púrpura', color: '#9C2691' },
 ];

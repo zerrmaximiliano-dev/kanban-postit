@@ -99,12 +99,13 @@ export function BoardHeader({ boardId }: { boardId: string }) {
           <div className="absolute right-0 top-8 z-10 flex flex-wrap gap-1.5 rounded-lg bg-white p-2 shadow-lg">
             {BOARD_COLOR_PRESETS.map((preset) => (
               <button
-                key={preset}
+                key={preset.color}
                 type="button"
-                onClick={() => handlePickColor(preset)}
-                style={{ backgroundColor: preset }}
+                onClick={() => handlePickColor(preset.color)}
+                style={{ backgroundColor: preset.color }}
                 className="h-6 w-6 rounded-full border border-black/10"
-                aria-label={`Color ${preset}`}
+                aria-label={`Color ${preset.name}`}
+                title={preset.name}
               />
             ))}
             <input
