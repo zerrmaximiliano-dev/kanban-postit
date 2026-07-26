@@ -1,6 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import {
+  closestCenter,
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import { createClient } from '@/src/modules/identity/data/supabaseClient';
 import { getBoardColumns } from '@/src/modules/boards/application/boardService';
 import {
@@ -11,7 +23,7 @@ import {
   updateChecklistItem,
   deleteChecklistItem,
 } from '@/src/modules/boards/application/noteService';
-import { getMonthRange, getWeekRange, bucketNotesByDay } from '../domain/bucketing';
+import { getMonthRange, getWeekRange, bucketNotesByDay, type DayBucket } from '../domain/bucketing';
 import { NoteCard } from '@/src/modules/boards/ui/NoteCard';
 import { NoteEditor } from '@/src/modules/boards/ui/NoteEditor';
 import { BoardTabs } from '@/src/modules/boards/ui/BoardTabs';
@@ -20,12 +32,58 @@ import type { ChecklistItem, Note } from '@/src/modules/boards/domain/types';
 
 type ViewMode = 'month' | 'week';
 
+function shiftDate(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d + days));
+  return date.toISOString().slice(0, 10);
+}
+
+function DraggableNote({ note, onOpen, onDelete }: { note: Note; onOpen: (n: Note) => void; onDelete: (n: Note) => void }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: note.id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ opacity: isDragging ? 0.4 : 1 }}
+      className="scale-90 origin-top-left"
+      {...attributes}
+      {...listeners}
+    >
+      <NoteCard note={note} onOpen={onOpen} onDelete={onDelete} />
+    </div>
+  );
+}
+
+function DayCell({
+  bucket,
+  onOpenNote,
+  onDeleteNote,
+}: {
+  bucket: DayBucket;
+  onOpenNote: (n: Note) => void;
+  onDeleteNote: (n: Note) => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: bucket.date });
+
+  return (
+    <div ref={setNodeRef} className={`min-h-24 rounded p-1.5 ${isOver ? 'bg-sky-50' : 'bg-gray-50'}`}>
+      <p className="mb-1 text-xs text-gray-400">{bucket.date.slice(8, 10)}</p>
+      {bucket.notes.map((note) => (
+        <DraggableNote key={note.id} note={note} onOpen={onOpenNote} onDelete={onDeleteNote} />
+      ))}
+    </div>
+  );
+}
+
 export function CalendarView({ boardId }: { boardId: string }) {
   const supabase = createClient();
   const [notes, setNotes] = useState<Note[]>([]);
   const [mode, setMode] = useState<ViewMode>('month');
   const [cursor, setCursor] = useState(new Date());
   const [activeNote, setActiveNote] = useState<Note | null>(null);
+  const [draggingNote, setDraggingNote] = useState<Note | null>(null);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   useEffect(() => {
     async function load() {
@@ -51,6 +109,32 @@ export function CalendarView({ boardId }: { boardId: string }) {
   async function handleDeleteNote(note: Note) {
     setNotes(notes.filter((n) => n.id !== note.id));
     await deleteNote(supabase, note.id);
+  }
+
+  function handleDragStart(event: DragStartEvent) {
+    const note = notes.find((n) => n.id === event.active.id);
+    setDraggingNote(note ?? null);
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    setDraggingNote(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    const note = notes.find((n) => n.id === active.id);
+    if (!note || !note.startDate) return;
+
+    const targetDate = String(over.id);
+    const dayDiff = Math.round(
+      (new Date(targetDate).getTime() - new Date(note.startDate).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (dayDiff === 0) return;
+
+    const newStartDate = shiftDate(note.startDate, dayDiff);
+    const newEndDate = note.endDate ? shiftDate(note.endDate, dayDiff) : null;
+
+    setNotes(notes.map((n) => (n.id === note.id ? { ...n, startDate: newStartDate, endDate: newEndDate } : n)));
+    await updateNoteDetails(supabase, note.id, { startDate: newStartDate, endDate: newEndDate });
   }
 
   async function handleAddChecklistItem(text: string): Promise<ChecklistItem> {
@@ -115,18 +199,31 @@ export function CalendarView({ boardId }: { boardId: string }) {
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-2">
-          {buckets.map((bucket) => (
-            <div key={bucket.date} className="min-h-24 rounded bg-gray-50 p-1.5">
-              <p className="mb-1 text-xs text-gray-400">{bucket.date.slice(8, 10)}</p>
-              {bucket.notes.map((note) => (
-                <div key={note.id} className="scale-90 origin-top-left">
-                  <NoteCard note={note} onOpen={setActiveNote} onDelete={handleDeleteNote} />
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid grid-cols-7 gap-2">
+            {buckets.map((bucket) => (
+              <DayCell
+                key={bucket.date}
+                bucket={bucket}
+                onOpenNote={setActiveNote}
+                onDeleteNote={handleDeleteNote}
+              />
+            ))}
+          </div>
+
+          <DragOverlay>
+            {draggingNote && (
+              <div className="w-48">
+                <NoteCard note={draggingNote} onOpen={() => {}} />
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
       </div>
 
       {activeNote && (

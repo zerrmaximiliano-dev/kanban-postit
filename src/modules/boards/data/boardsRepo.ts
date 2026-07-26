@@ -38,3 +38,8 @@ export async function renameBoard(client: SupabaseClient, boardId: string, name:
   const { error } = await client.from('boards').update({ name }).eq('id', boardId);
   if (error) throw error;
 }
+
+export async function deleteBoard(client: SupabaseClient, boardId: string): Promise<void> {
+  const { error } = await client.from('boards').delete().eq('id', boardId);
+  if (error) throw error;
+}

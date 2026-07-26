@@ -23,7 +23,8 @@ export function NoteEditor({
     color: string;
     priority: Priority;
     tags: string[];
-    dueDate: string | null;
+    startDate: string | null;
+    endDate: string | null;
   }) => void;
   onDelete?: () => void;
   onAddChecklistItem?: (text: string) => Promise<ChecklistItem>;
@@ -36,7 +37,8 @@ export function NoteEditor({
   const [color, setColor] = useState(note.color);
   const [priority, setPriority] = useState<Priority>(note.priority);
   const [tagsInput, setTagsInput] = useState(note.tags.join(', '));
-  const [dueDate, setDueDate] = useState(note.dueDate ?? '');
+  const [startDate, setStartDate] = useState(note.startDate ?? '');
+  const [endDate, setEndDate] = useState(note.endDate ?? '');
   const [checklist, setChecklist] = useState<ChecklistItem[]>(note.checklist);
   const [newItemText, setNewItemText] = useState('');
 
@@ -50,7 +52,8 @@ export function NoteEditor({
         .split(',')
         .map((t) => t.trim())
         .filter(Boolean),
-      dueDate: dueDate || null,
+      startDate: startDate || null,
+      endDate: endDate || null,
     });
     onClose();
   }
@@ -95,7 +98,7 @@ export function NoteEditor({
     <div className="fixed inset-0 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{ background: `radial-gradient(ellipse at center, #ffffff 55%, ${color}55 100%)` }}
+        style={{ background: `radial-gradient(ellipse at center, #ffffff 40%, ${color} 100%)` }}
         className="max-h-[85vh] w-96 space-y-3 overflow-y-auto rounded-lg p-5 shadow-xl"
       >
         <input
@@ -152,12 +155,26 @@ export function NoteEditor({
           placeholder="Tags separados por coma"
         />
 
-        <input
-          type="date"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-          className="w-full rounded border px-2 py-1.5 text-sm text-gray-900"
-        />
+        <div>
+          <p className="mb-1 text-xs font-medium text-gray-500">Fechas (para el calendario)</p>
+          <div className="flex gap-2">
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full rounded border px-2 py-1.5 text-sm text-gray-900"
+              aria-label="Fecha de inicio"
+            />
+            <input
+              type="date"
+              value={endDate}
+              min={startDate || undefined}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full rounded border px-2 py-1.5 text-sm text-gray-900"
+              aria-label="Fecha de fin"
+            />
+          </div>
+        </div>
 
         <div>
           <p className="mb-1 text-xs font-medium text-gray-500">Lista de tareas</p>

@@ -66,7 +66,12 @@ export function NoteCard({
         )}
       </div>
 
-      {note.dueDate && <p className="mt-1 text-xs text-gray-600">{note.dueDate}</p>}
+      {note.startDate && (
+        <p className="mt-1 text-xs text-gray-600">
+          {note.startDate}
+          {note.endDate && note.endDate !== note.startDate ? ` → ${note.endDate}` : ''}
+        </p>
+      )}
     </div>
   );
 }

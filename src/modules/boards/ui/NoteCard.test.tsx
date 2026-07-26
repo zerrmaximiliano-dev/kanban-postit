@@ -11,7 +11,8 @@ const note: Note = {
   color: '#fff59d',
   priority: 'high',
   tags: ['urgente'],
-  dueDate: '2026-07-25',
+  startDate: '2026-07-25',
+  endDate: null,
   order: 0,
   checklist: [
     { id: 'c1', noteId: 'n1', text: 'Preparar agenda', done: true, order: 0 },

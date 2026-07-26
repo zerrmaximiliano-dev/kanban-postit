@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/src/modules/identity/data/supabaseClient';
-import { listMyBoards, createBoardWithDefaults } from '../application/boardService';
+import { listMyBoards, createBoardWithDefaults, deleteBoard } from '../application/boardService';
 
 export function useBoards() {
   const supabase = createClient();
@@ -28,6 +28,21 @@ export function useCreateBoard() {
     },
     onError: (error) => {
       console.error('Failed to create board:', error);
+    },
+  });
+}
+
+export function useDeleteBoard() {
+  const supabase = createClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (boardId: string) => deleteBoard(supabase, boardId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['boards'] });
+    },
+    onError: (error) => {
+      console.error('Failed to delete board:', error);
     },
   });
 }

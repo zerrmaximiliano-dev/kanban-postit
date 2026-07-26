@@ -5,6 +5,8 @@ import {
   closestCenter,
   DndContext,
   DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
   PointerSensor,
   useDroppable,
   useSensor,
@@ -40,7 +42,7 @@ function SortableNote({
   onOpen: (n: Note) => void;
   onDelete: (n: Note) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: note.id,
     data: { columnId: note.columnId },
   });
@@ -48,7 +50,7 @@ function SortableNote({
   return (
     <div
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
       {...attributes}
       {...listeners}
     >
@@ -152,6 +154,7 @@ export function BoardView({ boardId }: { boardId: string }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeNote, setActiveNote] = useState<Note | null>(null);
   const [newColumnName, setNewColumnName] = useState('');
+  const [draggingNote, setDraggingNote] = useState<Note | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -165,7 +168,13 @@ export function BoardView({ boardId }: { boardId: string }) {
     load();
   }, [boardId]);
 
+  function handleDragStart(event: DragStartEvent) {
+    const note = notes.find((n) => n.id === event.active.id);
+    setDraggingNote(note ?? null);
+  }
+
   async function handleDragEnd(event: DragEndEvent) {
+    setDraggingNote(null);
     const { active, over } = event;
     if (!over) return;
 
@@ -271,7 +280,12 @@ export function BoardView({ boardId }: { boardId: string }) {
       <BoardHeader boardId={boardId} />
       <BoardTabs boardId={boardId} />
       <div className="min-h-[calc(100vh-3rem)] bg-[#fbfaf6] p-4">
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
           <div className="flex gap-0 overflow-x-auto rounded border border-gray-300 bg-white p-3 shadow-sm">
             {columns.map((column) => {
               const columnNotes = notes
@@ -300,6 +314,14 @@ export function BoardView({ boardId }: { boardId: string }) {
               />
             </form>
           </div>
+
+          <DragOverlay>
+            {draggingNote && (
+              <div className="w-64">
+                <NoteCard note={draggingNote} onOpen={() => {}} />
+              </div>
+            )}
+          </DragOverlay>
         </DndContext>
 
         {activeNote && (

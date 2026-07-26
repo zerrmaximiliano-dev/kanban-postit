@@ -19,7 +19,8 @@ function toNote(row: unknown): Note {
     color: parsed.color,
     priority: parsed.priority,
     tags: parsed.tags,
-    dueDate: parsed.due_date,
+    startDate: parsed.start_date,
+    endDate: parsed.end_date,
     order: parsed.order,
     checklist,
   };
@@ -57,7 +58,8 @@ export interface NoteUpdate {
   color?: string;
   priority?: Priority;
   tags?: string[];
-  dueDate?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
 }
 
 export async function updateNote(client: SupabaseClient, noteId: string, update: NoteUpdate): Promise<void> {
@@ -69,7 +71,8 @@ export async function updateNote(client: SupabaseClient, noteId: string, update:
       ...(update.color !== undefined && { color: update.color }),
       ...(update.priority !== undefined && { priority: update.priority }),
       ...(update.tags !== undefined && { tags: update.tags }),
-      ...(update.dueDate !== undefined && { due_date: update.dueDate }),
+      ...(update.startDate !== undefined && { start_date: update.startDate }),
+      ...(update.endDate !== undefined && { end_date: update.endDate }),
     })
     .eq('id', noteId);
   if (error) throw error;

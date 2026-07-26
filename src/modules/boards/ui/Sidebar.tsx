@@ -2,13 +2,16 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useBoards, useCreateBoard } from './useBoards';
+import { usePathname, useRouter } from 'next/navigation';
+import { useBoards, useCreateBoard, useDeleteBoard } from './useBoards';
+import type { Board } from '../domain/types';
 
 export function Sidebar() {
   const { data: boards, isLoading } = useBoards();
   const createBoard = useCreateBoard();
+  const deleteBoard = useDeleteBoard();
   const pathname = usePathname();
+  const router = useRouter();
   const [newBoardName, setNewBoardName] = useState('');
 
   function handleCreate(e: React.FormEvent) {
@@ -17,6 +20,19 @@ export function Sidebar() {
     if (!name) return;
     createBoard.mutate(name, {
       onSuccess: () => setNewBoardName(''),
+    });
+  }
+
+  function handleDelete(board: Board) {
+    if (!window.confirm(`¿Eliminar el tablero "${board.name}" y todo su contenido? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+    deleteBoard.mutate(board.id, {
+      onSuccess: () => {
+        if (pathname?.startsWith(`/boards/${board.id}`)) {
+          router.push('/boards');
+        }
+      },
     });
   }
 
@@ -53,15 +69,22 @@ export function Sidebar() {
         {boards?.map((board) => {
           const isActive = pathname?.startsWith(`/boards/${board.id}`);
           return (
-            <Link
+            <div
               key={board.id}
-              href={`/boards/${board.id}`}
-              className={`rounded px-2 py-1.5 text-sm ${
-                isActive ? 'bg-purple-600' : 'hover:bg-gray-700'
-              }`}
+              className={`group flex items-center rounded ${isActive ? 'bg-purple-600' : 'hover:bg-gray-700'}`}
             >
-              {board.name}
-            </Link>
+              <Link href={`/boards/${board.id}`} className="flex-1 px-2 py-1.5 text-sm">
+                {board.name}
+              </Link>
+              <button
+                type="button"
+                onClick={() => handleDelete(board)}
+                className="hidden px-2 text-gray-300 hover:text-red-400 group-hover:block"
+                aria-label={`Eliminar tablero ${board.name}`}
+              >
+                🗑
+              </button>
+            </div>
           );
         })}
       </nav>

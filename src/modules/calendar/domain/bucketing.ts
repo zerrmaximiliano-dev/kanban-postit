@@ -29,6 +29,12 @@ export function getWeekRange(date: Date): { start: Date; end: Date } {
   return { start, end };
 }
 
+function noteSpansDate(note: Note, dateStr: string): boolean {
+  if (!note.startDate) return false;
+  const end = note.endDate ?? note.startDate;
+  return dateStr >= note.startDate && dateStr <= end;
+}
+
 export function bucketNotesByDay(notes: Note[], rangeStart: Date, rangeEnd: Date): DayBucket[] {
   const buckets: DayBucket[] = [];
   const cursor = new Date(rangeStart);
@@ -37,7 +43,7 @@ export function bucketNotesByDay(notes: Note[], rangeStart: Date, rangeEnd: Date
     const dateStr = toDateString(cursor);
     buckets.push({
       date: dateStr,
-      notes: notes.filter((n) => n.dueDate === dateStr),
+      notes: notes.filter((n) => noteSpansDate(n, dateStr)),
     });
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }

@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { bucketNotesByDay, getMonthRange, getWeekRange } from './bucketing';
 import type { Note } from '../../boards/domain/types';
 
-function makeNote(id: string, dueDate: string | null): Note {
+function makeNote(id: string, startDate: string | null, endDate: string | null = null): Note {
   return {
     id,
     columnId: 'col1',
@@ -12,7 +12,8 @@ function makeNote(id: string, dueDate: string | null): Note {
     color: '#fff59d',
     priority: 'medium',
     tags: [],
-    dueDate,
+    startDate,
+    endDate,
     order: 0,
     checklist: [],
   };
@@ -43,7 +44,7 @@ describe('getWeekRange', () => {
 });
 
 describe('bucketNotesByDay', () => {
-  it('groups notes into the bucket matching their dueDate', () => {
+  it('groups notes into the bucket matching their startDate when there is no endDate', () => {
     const notes = [
       makeNote('a', '2026-07-20'),
       makeNote('b', '2026-07-20'),
@@ -58,5 +59,13 @@ describe('bucketNotesByDay', () => {
     expect(buckets[0].notes.map((n) => n.id)).toEqual(['a', 'b']);
     expect(buckets[2].date).toBe('2026-07-22');
     expect(buckets[2].notes.map((n) => n.id)).toEqual(['c']);
+  });
+
+  it('places a multi-day note in every bucket within its start/end range', () => {
+    const notes = [makeNote('e', '2026-07-20', '2026-07-22')];
+
+    const buckets = bucketNotesByDay(notes, new Date('2026-07-19'), new Date('2026-07-23'));
+
+    expect(buckets.map((b) => b.notes.map((n) => n.id))).toEqual([[], ['e'], ['e'], ['e'], []]);
   });
 });

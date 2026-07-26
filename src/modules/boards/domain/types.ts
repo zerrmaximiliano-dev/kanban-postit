@@ -31,7 +31,8 @@ export interface Note {
   color: string;
   priority: Priority;
   tags: string[];
-  dueDate: string | null; // 'YYYY-MM-DD' or null
+  startDate: string | null; // 'YYYY-MM-DD' or null
+  endDate: string | null; // 'YYYY-MM-DD' or null; null means same day as startDate
   order: number;
   checklist: ChecklistItem[];
 }

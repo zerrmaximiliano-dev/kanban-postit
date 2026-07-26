@@ -30,6 +30,7 @@ export const noteRowSchema = z.object({
   color: z.string(),
   priority: z.enum(['low', 'medium', 'high']),
   tags: z.array(z.string()),
-  due_date: z.string().nullable(),
+  start_date: z.string().nullable(),
+  end_date: z.string().nullable(),
   order: z.number().int(),
 });
