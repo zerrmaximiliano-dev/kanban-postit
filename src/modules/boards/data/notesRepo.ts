@@ -80,6 +80,41 @@ export async function deleteNote(client: SupabaseClient, noteId: string): Promis
   if (error) throw error;
 }
 
+export async function createChecklistItem(
+  client: SupabaseClient,
+  noteId: string,
+  text: string,
+  order: number
+): Promise<ChecklistItem> {
+  const { data, error } = await client
+    .from('checklist_items')
+    .insert({ note_id: noteId, text, order })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return toChecklistItem(data);
+}
+
+export async function updateChecklistItem(
+  client: SupabaseClient,
+  itemId: string,
+  update: { text?: string; done?: boolean }
+): Promise<void> {
+  const { error } = await client
+    .from('checklist_items')
+    .update({
+      ...(update.text !== undefined && { text: update.text }),
+      ...(update.done !== undefined && { done: update.done }),
+    })
+    .eq('id', itemId);
+  if (error) throw error;
+}
+
+export async function deleteChecklistItem(client: SupabaseClient, itemId: string): Promise<void> {
+  const { error } = await client.from('checklist_items').delete().eq('id', itemId);
+  if (error) throw error;
+}
+
 export async function moveNote(
   client: SupabaseClient,
   noteId: string,

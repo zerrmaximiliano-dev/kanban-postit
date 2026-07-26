@@ -27,3 +27,14 @@ export async function createBoard(client: SupabaseClient, name: string, ownerId:
   if (error) throw error;
   return toBoard(data);
 }
+
+export async function getBoard(client: SupabaseClient, boardId: string): Promise<Board> {
+  const { data, error } = await client.from('boards').select('*').eq('id', boardId).single();
+  if (error) throw error;
+  return toBoard(data);
+}
+
+export async function renameBoard(client: SupabaseClient, boardId: string, name: string): Promise<void> {
+  const { error } = await client.from('boards').update({ name }).eq('id', boardId);
+  if (error) throw error;
+}

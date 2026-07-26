@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Note, Priority } from '../domain/types';
+import type { ChecklistItem, Note, Priority } from '../domain/types';
 
 const COLORS = ['#FDE8C8', '#FBD4D4', '#D6ECD2', '#CFE3F5', '#E6D9F2', '#FCF4CB'];
 
@@ -10,6 +10,10 @@ export function NoteEditor({
   onClose,
   onSave,
   onDelete,
+  onAddChecklistItem,
+  onToggleChecklistItem,
+  onEditChecklistItemText,
+  onDeleteChecklistItem,
 }: {
   note: Note;
   onClose: () => void;
@@ -22,6 +26,10 @@ export function NoteEditor({
     dueDate: string | null;
   }) => void;
   onDelete?: () => void;
+  onAddChecklistItem?: (text: string) => Promise<ChecklistItem>;
+  onToggleChecklistItem?: (item: ChecklistItem, done: boolean) => void;
+  onEditChecklistItemText?: (item: ChecklistItem, text: string) => void;
+  onDeleteChecklistItem?: (item: ChecklistItem) => void;
 }) {
   const [title, setTitle] = useState(note.title);
   const [description, setDescription] = useState(note.description);
@@ -29,6 +37,8 @@ export function NoteEditor({
   const [priority, setPriority] = useState<Priority>(note.priority);
   const [tagsInput, setTagsInput] = useState(note.tags.join(', '));
   const [dueDate, setDueDate] = useState(note.dueDate ?? '');
+  const [checklist, setChecklist] = useState<ChecklistItem[]>(note.checklist);
+  const [newItemText, setNewItemText] = useState('');
 
   function handleSave() {
     onSave({
@@ -52,11 +62,41 @@ export function NoteEditor({
     onClose();
   }
 
+  async function handleAddItem(e: React.FormEvent) {
+    e.preventDefault();
+    const text = newItemText.trim();
+    if (!text || !onAddChecklistItem) return;
+    setNewItemText('');
+    const item = await onAddChecklistItem(text);
+    setChecklist((prev) => [...prev, item]);
+  }
+
+  function handleToggleItem(item: ChecklistItem) {
+    const done = !item.done;
+    setChecklist((prev) => prev.map((i) => (i.id === item.id ? { ...i, done } : i)));
+    onToggleChecklistItem?.(item, done);
+  }
+
+  function handleEditItemText(item: ChecklistItem, text: string) {
+    setChecklist((prev) => prev.map((i) => (i.id === item.id ? { ...i, text } : i)));
+  }
+
+  function commitItemText(item: ChecklistItem) {
+    const current = checklist.find((i) => i.id === item.id);
+    if (current) onEditChecklistItemText?.(item, current.text);
+  }
+
+  function handleDeleteItem(item: ChecklistItem) {
+    setChecklist((prev) => prev.filter((i) => i.id !== item.id));
+    onDeleteChecklistItem?.(item);
+  }
+
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-96 space-y-3 rounded-lg bg-white p-5 shadow-xl"
+        style={{ background: `radial-gradient(ellipse at center, #ffffff 55%, ${color}55 100%)` }}
+        className="max-h-[85vh] w-96 space-y-3 overflow-y-auto rounded-lg p-5 shadow-xl"
       >
         <input
           value={title}
@@ -118,6 +158,49 @@ export function NoteEditor({
           onChange={(e) => setDueDate(e.target.value)}
           className="w-full rounded border px-2 py-1.5 text-sm text-gray-900"
         />
+
+        <div>
+          <p className="mb-1 text-xs font-medium text-gray-500">Lista de tareas</p>
+          <div className="space-y-1">
+            {checklist.map((item) => (
+              <div key={item.id} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={item.done}
+                  onChange={() => handleToggleItem(item)}
+                  className="h-4 w-4 shrink-0"
+                />
+                <input
+                  value={item.text}
+                  onChange={(e) => handleEditItemText(item, e.target.value)}
+                  onBlur={() => commitItemText(item)}
+                  className={`w-full rounded border-none bg-transparent px-1 py-0.5 text-sm text-gray-900 focus:bg-white focus:ring-1 focus:ring-gray-300 ${
+                    item.done ? 'text-gray-400 line-through' : ''
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleDeleteItem(item)}
+                  className="shrink-0 text-gray-400 hover:text-red-600"
+                  aria-label="Eliminar tarea"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+          <form onSubmit={handleAddItem} className="mt-1.5 flex gap-1.5">
+            <input
+              value={newItemText}
+              onChange={(e) => setNewItemText(e.target.value)}
+              placeholder="+ Agregar tarea"
+              className="w-full rounded border px-2 py-1 text-sm text-gray-900"
+            />
+            <button type="submit" className="shrink-0 rounded bg-gray-200 px-2 py-1 text-sm text-gray-700">
+              Agregar
+            </button>
+          </form>
+        </div>
 
         <div className="flex items-center justify-between pt-2">
           {onDelete ? (

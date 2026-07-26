@@ -3,12 +3,20 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/src/modules/identity/data/supabaseClient';
 import { getBoardColumns } from '@/src/modules/boards/application/boardService';
-import { loadBoardNotes, updateNoteDetails, deleteNote } from '@/src/modules/boards/application/noteService';
+import {
+  loadBoardNotes,
+  updateNoteDetails,
+  deleteNote,
+  addChecklistItem,
+  updateChecklistItem,
+  deleteChecklistItem,
+} from '@/src/modules/boards/application/noteService';
 import { getMonthRange, getWeekRange, bucketNotesByDay } from '../domain/bucketing';
 import { NoteCard } from '@/src/modules/boards/ui/NoteCard';
 import { NoteEditor } from '@/src/modules/boards/ui/NoteEditor';
 import { BoardTabs } from '@/src/modules/boards/ui/BoardTabs';
-import type { Note } from '@/src/modules/boards/domain/types';
+import { BoardHeader } from '@/src/modules/boards/ui/BoardHeader';
+import type { ChecklistItem, Note } from '@/src/modules/boards/domain/types';
 
 type ViewMode = 'month' | 'week';
 
@@ -45,8 +53,51 @@ export function CalendarView({ boardId }: { boardId: string }) {
     await deleteNote(supabase, note.id);
   }
 
+  async function handleAddChecklistItem(text: string): Promise<ChecklistItem> {
+    if (!activeNote) throw new Error('No active note');
+    const order = activeNote.checklist.length;
+    const item = await addChecklistItem(supabase, activeNote.id, text, order);
+    setNotes(notes.map((n) => (n.id === activeNote.id ? { ...n, checklist: [...n.checklist, item] } : n)));
+    return item;
+  }
+
+  function handleToggleChecklistItem(item: ChecklistItem, done: boolean) {
+    if (!activeNote) return;
+    setNotes(
+      notes.map((n) =>
+        n.id === activeNote.id
+          ? { ...n, checklist: n.checklist.map((i) => (i.id === item.id ? { ...i, done } : i)) }
+          : n
+      )
+    );
+    updateChecklistItem(supabase, item.id, { done });
+  }
+
+  function handleEditChecklistItemText(item: ChecklistItem, text: string) {
+    if (!activeNote) return;
+    setNotes(
+      notes.map((n) =>
+        n.id === activeNote.id
+          ? { ...n, checklist: n.checklist.map((i) => (i.id === item.id ? { ...i, text } : i)) }
+          : n
+      )
+    );
+    updateChecklistItem(supabase, item.id, { text });
+  }
+
+  function handleDeleteChecklistItem(item: ChecklistItem) {
+    if (!activeNote) return;
+    setNotes(
+      notes.map((n) =>
+        n.id === activeNote.id ? { ...n, checklist: n.checklist.filter((i) => i.id !== item.id) } : n
+      )
+    );
+    deleteChecklistItem(supabase, item.id);
+  }
+
   return (
     <div>
+      <BoardHeader boardId={boardId} />
       <BoardTabs boardId={boardId} />
       <div className="p-4">
         <div className="mb-3 flex items-center gap-2">
@@ -84,6 +135,10 @@ export function CalendarView({ boardId }: { boardId: string }) {
           onClose={() => setActiveNote(null)}
           onSave={handleSaveNote}
           onDelete={() => handleDeleteNote(activeNote)}
+          onAddChecklistItem={handleAddChecklistItem}
+          onToggleChecklistItem={handleToggleChecklistItem}
+          onEditChecklistItemText={handleEditChecklistItemText}
+          onDeleteChecklistItem={handleDeleteChecklistItem}
         />
       )}
     </div>

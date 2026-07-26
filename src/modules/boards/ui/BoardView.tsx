@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import {
+  closestCenter,
   DndContext,
   DragEndEvent,
   PointerSensor,
+  useDroppable,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -17,13 +19,17 @@ import {
   addNote,
   updateNoteDetails,
   deleteNote,
+  addChecklistItem,
+  updateChecklistItem,
+  deleteChecklistItem,
   dragNoteWithinColumn,
   dragNoteAcrossColumns,
 } from '../application/noteService';
 import { NoteCard } from './NoteCard';
 import { NoteEditor } from './NoteEditor';
 import { BoardTabs } from './BoardTabs';
-import type { Column, Note } from '../domain/types';
+import { BoardHeader } from './BoardHeader';
+import type { Column, Note, ChecklistItem } from '../domain/types';
 
 function SortableNote({
   note,
@@ -70,6 +76,7 @@ function BoardColumn({
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(column.name);
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({ id: column.id });
 
   function commitRename() {
     setEditing(false);
@@ -119,9 +126,14 @@ function BoardColumn({
       </div>
 
       <SortableContext items={notes.map((n) => n.id)} strategy={verticalListSortingStrategy}>
-        {notes.map((note) => (
-          <SortableNote key={note.id} note={note} onOpen={onOpenNote} onDelete={onDeleteNote} />
-        ))}
+        <div
+          ref={setDroppableRef}
+          className={`min-h-[3rem] rounded ${isOver ? 'bg-sky-50' : ''}`}
+        >
+          {notes.map((note) => (
+            <SortableNote key={note.id} note={note} onOpen={onOpenNote} onDelete={onDeleteNote} />
+          ))}
+        </div>
       </SortableContext>
 
       <button
@@ -212,11 +224,54 @@ export function BoardView({ boardId }: { boardId: string }) {
     await deleteNote(supabase, note.id);
   }
 
+  async function handleAddChecklistItem(text: string): Promise<ChecklistItem> {
+    if (!activeNote) throw new Error('No active note');
+    const order = activeNote.checklist.length;
+    const item = await addChecklistItem(supabase, activeNote.id, text, order);
+    setNotes(notes.map((n) => (n.id === activeNote.id ? { ...n, checklist: [...n.checklist, item] } : n)));
+    return item;
+  }
+
+  function handleToggleChecklistItem(item: ChecklistItem, done: boolean) {
+    if (!activeNote) return;
+    setNotes(
+      notes.map((n) =>
+        n.id === activeNote.id
+          ? { ...n, checklist: n.checklist.map((i) => (i.id === item.id ? { ...i, done } : i)) }
+          : n
+      )
+    );
+    updateChecklistItem(supabase, item.id, { done });
+  }
+
+  function handleEditChecklistItemText(item: ChecklistItem, text: string) {
+    if (!activeNote) return;
+    setNotes(
+      notes.map((n) =>
+        n.id === activeNote.id
+          ? { ...n, checklist: n.checklist.map((i) => (i.id === item.id ? { ...i, text } : i)) }
+          : n
+      )
+    );
+    updateChecklistItem(supabase, item.id, { text });
+  }
+
+  function handleDeleteChecklistItem(item: ChecklistItem) {
+    if (!activeNote) return;
+    setNotes(
+      notes.map((n) =>
+        n.id === activeNote.id ? { ...n, checklist: n.checklist.filter((i) => i.id !== item.id) } : n
+      )
+    );
+    deleteChecklistItem(supabase, item.id);
+  }
+
   return (
     <div>
+      <BoardHeader boardId={boardId} />
       <BoardTabs boardId={boardId} />
       <div className="min-h-[calc(100vh-3rem)] bg-[#fbfaf6] p-4">
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <div className="flex gap-0 overflow-x-auto rounded border border-gray-300 bg-white p-3 shadow-sm">
             {columns.map((column) => {
               const columnNotes = notes
@@ -253,6 +308,10 @@ export function BoardView({ boardId }: { boardId: string }) {
             onClose={() => setActiveNote(null)}
             onSave={handleSaveNote}
             onDelete={() => handleDeleteNote(activeNote)}
+            onAddChecklistItem={handleAddChecklistItem}
+            onToggleChecklistItem={handleToggleChecklistItem}
+            onEditChecklistItemText={handleEditChecklistItemText}
+            onDeleteChecklistItem={handleDeleteChecklistItem}
           />
         )}
       </div>

@@ -29,6 +29,22 @@ export async function deleteNote(client: SupabaseClient, noteId: string): Promis
   return notesRepo.deleteNote(client, noteId);
 }
 
+export async function addChecklistItem(client: SupabaseClient, noteId: string, text: string, order: number) {
+  return notesRepo.createChecklistItem(client, noteId, text, order);
+}
+
+export async function updateChecklistItem(
+  client: SupabaseClient,
+  itemId: string,
+  update: { text?: string; done?: boolean }
+): Promise<void> {
+  return notesRepo.updateChecklistItem(client, itemId, update);
+}
+
+export async function deleteChecklistItem(client: SupabaseClient, itemId: string): Promise<void> {
+  return notesRepo.deleteChecklistItem(client, itemId);
+}
+
 export async function dragNoteWithinColumn(
   client: SupabaseClient,
   allNotes: Note[],
