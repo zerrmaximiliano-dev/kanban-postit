@@ -11,14 +11,29 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { createClient } from '@/src/modules/identity/data/supabaseClient';
-import { getBoardColumns, addColumn } from '../application/boardService';
-import { loadBoardNotes, addNote, updateNoteDetails, dragNoteWithinColumn, dragNoteAcrossColumns } from '../application/noteService';
+import { getBoardColumns, addColumn, renameColumn, deleteColumn } from '../application/boardService';
+import {
+  loadBoardNotes,
+  addNote,
+  updateNoteDetails,
+  deleteNote,
+  dragNoteWithinColumn,
+  dragNoteAcrossColumns,
+} from '../application/noteService';
 import { NoteCard } from './NoteCard';
 import { NoteEditor } from './NoteEditor';
 import { BoardTabs } from './BoardTabs';
 import type { Column, Note } from '../domain/types';
 
-function SortableNote({ note, onClick }: { note: Note; onClick: (n: Note) => void }) {
+function SortableNote({
+  note,
+  onOpen,
+  onDelete,
+}: {
+  note: Note;
+  onOpen: (n: Note) => void;
+  onDelete: (n: Note) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: note.id,
     data: { columnId: note.columnId },
@@ -31,7 +46,90 @@ function SortableNote({ note, onClick }: { note: Note; onClick: (n: Note) => voi
       {...attributes}
       {...listeners}
     >
-      <NoteCard note={note} onClick={onClick} />
+      <NoteCard note={note} onOpen={onOpen} onDelete={onDelete} />
+    </div>
+  );
+}
+
+function BoardColumn({
+  column,
+  notes,
+  onAddNote,
+  onOpenNote,
+  onDeleteNote,
+  onRename,
+  onDeleteColumn,
+}: {
+  column: Column;
+  notes: Note[];
+  onAddNote: (columnId: string) => void;
+  onOpenNote: (n: Note) => void;
+  onDeleteNote: (n: Note) => void;
+  onRename: (columnId: string, name: string) => void;
+  onDeleteColumn: (column: Column) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(column.name);
+
+  function commitRename() {
+    setEditing(false);
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === column.name) {
+      setName(column.name);
+      return;
+    }
+    onRename(column.id, trimmed);
+  }
+
+  return (
+    <div className="w-64 shrink-0 border-r border-gray-300 px-3 last:border-r-0">
+      <div className="mb-3 flex items-center justify-between border-b-2 border-sky-200 pb-1.5">
+        {editing ? (
+          <input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={commitRename}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitRename();
+              if (e.key === 'Escape') {
+                setName(column.name);
+                setEditing(false);
+              }
+            }}
+            className="w-full rounded border border-sky-300 px-1 py-0.5 text-sm font-bold text-sky-800"
+          />
+        ) : (
+          <h3
+            onClick={() => setEditing(true)}
+            className="cursor-text text-sm font-bold uppercase tracking-wide text-sky-700"
+            title="Click para renombrar"
+          >
+            {column.name}
+          </h3>
+        )}
+        <button
+          type="button"
+          onClick={() => onDeleteColumn(column)}
+          className="ml-2 text-gray-400 hover:text-red-600"
+          aria-label={`Eliminar columna ${column.name}`}
+        >
+          🗑
+        </button>
+      </div>
+
+      <SortableContext items={notes.map((n) => n.id)} strategy={verticalListSortingStrategy}>
+        {notes.map((note) => (
+          <SortableNote key={note.id} note={note} onOpen={onOpenNote} onDelete={onDeleteNote} />
+        ))}
+      </SortableContext>
+
+      <button
+        onClick={() => onAddNote(column.id)}
+        className="mt-1 w-full rounded py-1 text-left text-sm text-gray-400 hover:bg-gray-100"
+      >
+        + Nueva nota
+      </button>
     </div>
   );
 }
@@ -85,6 +183,18 @@ export function BoardView({ boardId }: { boardId: string }) {
     setNewColumnName('');
   }
 
+  async function handleRenameColumn(columnId: string, name: string) {
+    setColumns(columns.map((c) => (c.id === columnId ? { ...c, name } : c)));
+    await renameColumn(supabase, columnId, name);
+  }
+
+  async function handleDeleteColumn(column: Column) {
+    if (!window.confirm(`¿Eliminar la columna "${column.name}" y todas sus notas?`)) return;
+    setColumns(columns.filter((c) => c.id !== column.id));
+    setNotes(notes.filter((n) => n.columnId !== column.id));
+    await deleteColumn(supabase, column.id);
+  }
+
   async function handleAddNote(columnId: string) {
     const columnNotes = notes.filter((n) => n.columnId === columnId);
     const note = await addNote(supabase, columnId, 'Nueva nota', columnNotes);
@@ -97,45 +207,53 @@ export function BoardView({ boardId }: { boardId: string }) {
     setNotes(notes.map((n) => (n.id === activeNote.id ? { ...n, ...update } : n)));
   }
 
+  async function handleDeleteNote(note: Note) {
+    setNotes(notes.filter((n) => n.id !== note.id));
+    await deleteNote(supabase, note.id);
+  }
+
   return (
     <div>
       <BoardTabs boardId={boardId} />
-      <div className="p-4">
+      <div className="min-h-[calc(100vh-3rem)] bg-[#fbfaf6] p-4">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <div className="flex gap-4 overflow-x-auto">
+          <div className="flex gap-0 overflow-x-auto rounded border border-gray-300 bg-white p-3 shadow-sm">
             {columns.map((column) => {
-              const columnNotes = notes.filter((n) => n.columnId === column.id).sort((a, b) => a.order - b.order);
+              const columnNotes = notes
+                .filter((n) => n.columnId === column.id)
+                .sort((a, b) => a.order - b.order);
               return (
-                <div key={column.id} className="w-64 shrink-0 rounded-lg bg-gray-100 p-3">
-                  <h3 className="mb-2 text-sm font-bold uppercase text-gray-600">{column.name}</h3>
-                  <SortableContext items={columnNotes.map((n) => n.id)} strategy={verticalListSortingStrategy}>
-                    {columnNotes.map((note) => (
-                      <SortableNote key={note.id} note={note} onClick={setActiveNote} />
-                    ))}
-                  </SortableContext>
-                  <button
-                    onClick={() => handleAddNote(column.id)}
-                    className="mt-1 w-full rounded py-1 text-left text-sm text-gray-500 hover:bg-gray-200"
-                  >
-                    + Nueva nota
-                  </button>
-                </div>
+                <BoardColumn
+                  key={column.id}
+                  column={column}
+                  notes={columnNotes}
+                  onAddNote={handleAddNote}
+                  onOpenNote={setActiveNote}
+                  onDeleteNote={handleDeleteNote}
+                  onRename={handleRenameColumn}
+                  onDeleteColumn={handleDeleteColumn}
+                />
               );
             })}
 
-            <form onSubmit={handleAddColumn} className="w-56 shrink-0">
+            <form onSubmit={handleAddColumn} className="w-56 shrink-0 px-3">
               <input
                 value={newColumnName}
                 onChange={(e) => setNewColumnName(e.target.value)}
                 placeholder="+ Nueva columna"
-                className="w-full rounded border border-dashed px-2 py-1.5 text-sm"
+                className="w-full rounded border border-dashed border-gray-300 px-2 py-1.5 text-sm text-gray-900"
               />
             </form>
           </div>
         </DndContext>
 
         {activeNote && (
-          <NoteEditor note={activeNote} onClose={() => setActiveNote(null)} onSave={handleSaveNote} />
+          <NoteEditor
+            note={activeNote}
+            onClose={() => setActiveNote(null)}
+            onSave={handleSaveNote}
+            onDelete={() => handleDeleteNote(activeNote)}
+          />
         )}
       </div>
     </div>

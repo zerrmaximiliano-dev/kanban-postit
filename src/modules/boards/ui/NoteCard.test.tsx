@@ -21,18 +21,28 @@ const note: Note = {
 
 describe('NoteCard', () => {
   it('renders title, tags, and checklist progress', () => {
-    render(<NoteCard note={note} onClick={() => {}} />);
+    render(<NoteCard note={note} onOpen={() => {}} />);
 
     expect(screen.getByText('Llamar al cliente')).toBeInTheDocument();
     expect(screen.getByText('urgente')).toBeInTheDocument();
     expect(screen.getByText('1/2')).toBeInTheDocument();
   });
 
-  it('calls onClick when clicked', () => {
-    const onClick = vi.fn();
-    render(<NoteCard note={note} onClick={onClick} />);
+  it('calls onOpen when double-clicked', () => {
+    const onOpen = vi.fn();
+    render(<NoteCard note={note} onOpen={onOpen} />);
 
-    fireEvent.click(screen.getByText('Llamar al cliente'));
-    expect(onClick).toHaveBeenCalledWith(note);
+    fireEvent.doubleClick(screen.getByText('Llamar al cliente'));
+    expect(onOpen).toHaveBeenCalledWith(note);
+  });
+
+  it('calls onDelete when the delete button is clicked, without triggering onOpen', () => {
+    const onOpen = vi.fn();
+    const onDelete = vi.fn();
+    render(<NoteCard note={note} onOpen={onOpen} onDelete={onDelete} />);
+
+    fireEvent.click(screen.getByLabelText('Eliminar nota'));
+    expect(onDelete).toHaveBeenCalledWith(note);
+    expect(onOpen).not.toHaveBeenCalled();
   });
 });

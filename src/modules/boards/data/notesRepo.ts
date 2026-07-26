@@ -75,6 +75,11 @@ export async function updateNote(client: SupabaseClient, noteId: string, update:
   if (error) throw error;
 }
 
+export async function deleteNote(client: SupabaseClient, noteId: string): Promise<void> {
+  const { error } = await client.from('notes').delete().eq('id', noteId);
+  if (error) throw error;
+}
+
 export async function moveNote(
   client: SupabaseClient,
   noteId: string,

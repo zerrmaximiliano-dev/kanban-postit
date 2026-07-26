@@ -25,6 +25,10 @@ export async function updateNoteDetails(
   return notesRepo.updateNote(client, noteId, update);
 }
 
+export async function deleteNote(client: SupabaseClient, noteId: string): Promise<void> {
+  return notesRepo.deleteNote(client, noteId);
+}
+
 export async function dragNoteWithinColumn(
   client: SupabaseClient,
   allNotes: Note[],

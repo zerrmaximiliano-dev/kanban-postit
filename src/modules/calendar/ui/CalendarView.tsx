@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/src/modules/identity/data/supabaseClient';
 import { getBoardColumns } from '@/src/modules/boards/application/boardService';
-import { loadBoardNotes, updateNoteDetails } from '@/src/modules/boards/application/noteService';
+import { loadBoardNotes, updateNoteDetails, deleteNote } from '@/src/modules/boards/application/noteService';
 import { getMonthRange, getWeekRange, bucketNotesByDay } from '../domain/bucketing';
 import { NoteCard } from '@/src/modules/boards/ui/NoteCard';
 import { NoteEditor } from '@/src/modules/boards/ui/NoteEditor';
@@ -40,6 +40,11 @@ export function CalendarView({ boardId }: { boardId: string }) {
     setNotes(notes.map((n) => (n.id === activeNote.id ? { ...n, ...update } : n)));
   }
 
+  async function handleDeleteNote(note: Note) {
+    setNotes(notes.filter((n) => n.id !== note.id));
+    await deleteNote(supabase, note.id);
+  }
+
   return (
     <div>
       <BoardTabs boardId={boardId} />
@@ -65,7 +70,7 @@ export function CalendarView({ boardId }: { boardId: string }) {
               <p className="mb-1 text-xs text-gray-400">{bucket.date.slice(8, 10)}</p>
               {bucket.notes.map((note) => (
                 <div key={note.id} className="scale-90 origin-top-left">
-                  <NoteCard note={note} onClick={setActiveNote} />
+                  <NoteCard note={note} onOpen={setActiveNote} onDelete={handleDeleteNote} />
                 </div>
               ))}
             </div>
@@ -74,7 +79,12 @@ export function CalendarView({ boardId }: { boardId: string }) {
       </div>
 
       {activeNote && (
-        <NoteEditor note={activeNote} onClose={() => setActiveNote(null)} onSave={handleSaveNote} />
+        <NoteEditor
+          note={activeNote}
+          onClose={() => setActiveNote(null)}
+          onSave={handleSaveNote}
+          onDelete={() => handleDeleteNote(activeNote)}
+        />
       )}
     </div>
   );

@@ -26,5 +26,8 @@ export function useCreateBoard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['boards'] });
     },
+    onError: (error) => {
+      console.error('Failed to create board:', error);
+    },
   });
 }

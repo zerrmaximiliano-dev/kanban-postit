@@ -13,9 +13,11 @@ export function Sidebar() {
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!newBoardName.trim()) return;
-    createBoard.mutate(newBoardName.trim());
-    setNewBoardName('');
+    const name = newBoardName.trim();
+    if (!name) return;
+    createBoard.mutate(name, {
+      onSuccess: () => setNewBoardName(''),
+    });
   }
 
   return (
@@ -24,9 +26,30 @@ export function Sidebar() {
         Tableros
       </h2>
 
+      <form onSubmit={handleCreate} className="flex flex-col gap-1">
+        <input
+          value={newBoardName}
+          onChange={(e) => setNewBoardName(e.target.value)}
+          placeholder="Nuevo tablero..."
+          className="rounded bg-gray-700 px-2 py-1.5 text-sm placeholder-gray-400"
+        />
+        <button
+          type="submit"
+          disabled={createBoard.isPending}
+          className="rounded bg-purple-600 px-2 py-1.5 text-sm disabled:opacity-50"
+        >
+          {createBoard.isPending ? 'Creando...' : '+ Crear tablero'}
+        </button>
+        {createBoard.isError && (
+          <p className="text-xs text-red-400">
+            No se pudo crear el tablero. Intentá de nuevo.
+          </p>
+        )}
+      </form>
+
       {isLoading && <p className="px-1 text-sm text-gray-400">Cargando...</p>}
 
-      <nav className="flex flex-col gap-1">
+      <nav className="flex flex-col gap-1 overflow-y-auto">
         {boards?.map((board) => {
           const isActive = pathname?.startsWith(`/boards/${board.id}`);
           return (
@@ -42,18 +65,6 @@ export function Sidebar() {
           );
         })}
       </nav>
-
-      <form onSubmit={handleCreate} className="mt-auto flex flex-col gap-1">
-        <input
-          value={newBoardName}
-          onChange={(e) => setNewBoardName(e.target.value)}
-          placeholder="Nuevo tablero..."
-          className="rounded bg-gray-700 px-2 py-1.5 text-sm placeholder-gray-400"
-        />
-        <button type="submit" className="rounded bg-purple-600 px-2 py-1.5 text-sm">
-          + Crear tablero
-        </button>
-      </form>
     </aside>
   );
 }
