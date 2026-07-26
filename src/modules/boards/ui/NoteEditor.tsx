@@ -98,7 +98,7 @@ export function NoteEditor({
     <div className="fixed inset-0 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{ background: `radial-gradient(ellipse at center, #ffffff 40%, ${color} 100%)` }}
+        style={{ background: `radial-gradient(ellipse at center, #ffffff 60%, ${color}b3 100%)` }}
         className="max-h-[85vh] w-96 space-y-3 overflow-y-auto rounded-lg p-5 shadow-xl"
       >
         <input

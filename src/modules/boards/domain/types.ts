@@ -6,6 +6,7 @@ export interface Board {
   name: string;
   ownerId: string;
   orgId: string | null;
+  color: string | null;
 }
 
 export interface Column {

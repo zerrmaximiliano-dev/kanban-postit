@@ -1,6 +1,6 @@
 // src/modules/calendar/domain/bucketing.test.ts
 import { describe, it, expect } from 'vitest';
-import { bucketNotesByDay, getMonthRange, getWeekRange } from './bucketing';
+import { bucketNotesByDay, getMonthLeadingBlankDays, getMonthRange, getWeekRange } from './bucketing';
 import type { Note } from '../../boards/domain/types';
 
 function makeNote(id: string, startDate: string | null, endDate: string | null = null): Note {
@@ -28,18 +28,25 @@ describe('getMonthRange', () => {
 });
 
 describe('getWeekRange', () => {
-  it('returns Monday through Sunday for a Wednesday date', () => {
+  it('returns Sunday through Saturday for a Wednesday date', () => {
     const wednesday = new Date('2026-07-22T00:00:00'); // a Wednesday
     const { start, end } = getWeekRange(wednesday);
-    expect(start.toISOString().slice(0, 10)).toBe('2026-07-20');
-    expect(end.toISOString().slice(0, 10)).toBe('2026-07-26');
+    expect(start.toISOString().slice(0, 10)).toBe('2026-07-19');
+    expect(end.toISOString().slice(0, 10)).toBe('2026-07-25');
   });
 
-  it('treats Sunday as the end of the previous week, not the start of a new one', () => {
+  it('treats Sunday as the start of its own week', () => {
     const sunday = new Date('2026-07-26T00:00:00');
     const { start, end } = getWeekRange(sunday);
-    expect(start.toISOString().slice(0, 10)).toBe('2026-07-20');
-    expect(end.toISOString().slice(0, 10)).toBe('2026-07-26');
+    expect(start.toISOString().slice(0, 10)).toBe('2026-07-26');
+    expect(end.toISOString().slice(0, 10)).toBe('2026-08-01');
+  });
+});
+
+describe('getMonthLeadingBlankDays', () => {
+  it('returns the weekday index (0=Sunday) of the 1st of the month', () => {
+    // 2026-07-01 is a Wednesday
+    expect(getMonthLeadingBlankDays(2026, 6)).toBe(3);
   });
 });
 

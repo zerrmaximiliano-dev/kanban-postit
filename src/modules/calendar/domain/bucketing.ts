@@ -21,12 +21,16 @@ export function getWeekRange(date: Date): { start: Date; end: Date } {
   // `date` from a local-time string (e.g. 'YYYY-MM-DDTHH:mm:ss' with no
   // timezone). We then rebuild start/end as UTC-midnight Date objects so
   // that .toISOString() reads back the intended calendar date regardless
-  // of the host machine's timezone.
+  // of the host machine's timezone. Week starts on Sunday.
   const day = date.getDay(); // 0 = Sunday (local)
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const start = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate() + diffToMonday));
-  const end = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate() + diffToMonday + 6));
+  const start = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate() - day));
+  const end = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate() - day + 6));
   return { start, end };
+}
+
+/** Weekday index (0 = Sunday) of the 1st of the given month, for aligning the month grid. */
+export function getMonthLeadingBlankDays(year: number, month: number): number {
+  return new Date(Date.UTC(year, month, 1)).getUTCDay();
 }
 
 function noteSpansDate(note: Note, dateStr: string): boolean {

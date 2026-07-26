@@ -30,4 +30,4 @@ export async function addColumn(client: SupabaseClient, boardId: string, name: s
 }
 
 export { renameColumn, deleteColumn } from '../data/columnsRepo';
-export { getBoard, renameBoard, deleteBoard } from '../data/boardsRepo';
+export { getBoard, renameBoard, deleteBoard, updateBoardColor } from '../data/boardsRepo';

@@ -24,14 +24,27 @@ import {
   addChecklistItem,
   updateChecklistItem,
   deleteChecklistItem,
-  dragNoteWithinColumn,
-  dragNoteAcrossColumns,
+  computeReorderWithinColumn,
+  computeMoveToColumn,
+  persistReorder,
+  persistMove,
 } from '../application/noteService';
 import { NoteCard } from './NoteCard';
 import { NoteEditor } from './NoteEditor';
 import { BoardTabs } from './BoardTabs';
 import { BoardHeader } from './BoardHeader';
+import { useBoardTheme } from './BoardThemeContext';
+import { getBoardPalette } from '../domain/palette';
 import type { Column, Note, ChecklistItem } from '../domain/types';
+
+function noteMatchesQuery(note: Note, query: string): boolean {
+  const q = query.toLowerCase();
+  return (
+    note.title.toLowerCase().includes(q) ||
+    note.description.toLowerCase().includes(q) ||
+    note.tags.some((tag) => tag.toLowerCase().includes(q))
+  );
+}
 
 function SortableNote({
   note,
@@ -62,6 +75,7 @@ function SortableNote({
 function BoardColumn({
   column,
   notes,
+  accentColor,
   onAddNote,
   onOpenNote,
   onDeleteNote,
@@ -70,6 +84,7 @@ function BoardColumn({
 }: {
   column: Column;
   notes: Note[];
+  accentColor: string;
   onAddNote: (columnId: string) => void;
   onOpenNote: (n: Note) => void;
   onDeleteNote: (n: Note) => void;
@@ -91,8 +106,8 @@ function BoardColumn({
   }
 
   return (
-    <div className="w-64 shrink-0 border-r border-gray-300 px-3 last:border-r-0">
-      <div className="mb-3 flex items-center justify-between border-b-2 border-sky-200 pb-1.5">
+    <div className="w-64 shrink-0 rounded-lg bg-white p-3 shadow-sm" style={{ borderTop: `3px solid ${accentColor}` }}>
+      <div className="mb-3 flex items-center justify-between pb-1.5">
         {editing ? (
           <input
             autoFocus
@@ -106,12 +121,12 @@ function BoardColumn({
                 setEditing(false);
               }
             }}
-            className="w-full rounded border border-sky-300 px-1 py-0.5 text-sm font-bold text-sky-800"
+            className="w-full rounded border border-gray-300 px-1 py-0.5 text-sm font-bold text-gray-800"
           />
         ) : (
           <h3
             onClick={() => setEditing(true)}
-            className="cursor-text text-sm font-bold uppercase tracking-wide text-sky-700"
+            className="cursor-text text-sm font-bold uppercase tracking-wide text-gray-700"
             title="Click para renombrar"
           >
             {column.name}
@@ -150,11 +165,14 @@ function BoardColumn({
 
 export function BoardView({ boardId }: { boardId: string }) {
   const supabase = createClient();
+  const { boardColor } = useBoardTheme();
+  const palette = getBoardPalette(boardColor);
   const [columns, setColumns] = useState<Column[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeNote, setActiveNote] = useState<Note | null>(null);
   const [newColumnName, setNewColumnName] = useState('');
   const [draggingNote, setDraggingNote] = useState<Note | null>(null);
+  const [query, setQuery] = useState('');
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -173,7 +191,7 @@ export function BoardView({ boardId }: { boardId: string }) {
     setDraggingNote(note ?? null);
   }
 
-  async function handleDragEnd(event: DragEndEvent) {
+  function handleDragEnd(event: DragEndEvent) {
     setDraggingNote(null);
     const { active, over } = event;
     if (!over) return;
@@ -188,11 +206,16 @@ export function BoardView({ boardId }: { boardId: string }) {
     if (!draggedNote) return;
 
     if (draggedNote.columnId === overColumnId) {
-      const updated = await dragNoteWithinColumn(supabase, notes, noteId, targetIndex);
+      const updated = computeReorderWithinColumn(notes, noteId, targetIndex);
       setNotes(updated);
+      const reordered = updated.filter((n) => n.columnId === overColumnId);
+      persistReorder(supabase, reordered);
     } else {
-      const updated = await dragNoteAcrossColumns(supabase, notes, noteId, overColumnId, targetIndex);
+      const updated = computeMoveToColumn(notes, noteId, overColumnId, targetIndex);
       setNotes(updated);
+      const affected = updated.filter((n) => n.columnId === overColumnId);
+      persistMove(supabase, noteId, overColumnId, targetIndex);
+      persistReorder(supabase, affected);
     }
   }
 
@@ -279,23 +302,32 @@ export function BoardView({ boardId }: { boardId: string }) {
     <div>
       <BoardHeader boardId={boardId} />
       <BoardTabs boardId={boardId} />
-      <div className="min-h-[calc(100vh-3rem)] bg-[#fbfaf6] p-4">
+      <div className="min-h-[calc(100vh-3rem)] p-4" style={{ backgroundColor: palette.light }}>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar notas por palabra clave..."
+          className="mb-4 w-full max-w-sm rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm"
+        />
+
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-0 overflow-x-auto rounded border border-gray-300 bg-white p-3 shadow-sm">
+          <div className="flex gap-3 overflow-x-auto">
             {columns.map((column) => {
               const columnNotes = notes
                 .filter((n) => n.columnId === column.id)
+                .filter((n) => (query.trim() ? noteMatchesQuery(n, query) : true))
                 .sort((a, b) => a.order - b.order);
               return (
                 <BoardColumn
                   key={column.id}
                   column={column}
                   notes={columnNotes}
+                  accentColor={palette.medium}
                   onAddNote={handleAddNote}
                   onOpenNote={setActiveNote}
                   onDeleteNote={handleDeleteNote}
@@ -305,12 +337,12 @@ export function BoardView({ boardId }: { boardId: string }) {
               );
             })}
 
-            <form onSubmit={handleAddColumn} className="w-56 shrink-0 px-3">
+            <form onSubmit={handleAddColumn} className="w-56 shrink-0">
               <input
                 value={newColumnName}
                 onChange={(e) => setNewColumnName(e.target.value)}
                 placeholder="+ Nueva columna"
-                className="w-full rounded border border-dashed border-gray-300 px-2 py-1.5 text-sm text-gray-900"
+                className="w-full rounded border border-dashed border-gray-400 bg-white/60 px-2 py-1.5 text-sm text-gray-900"
               />
             </form>
           </div>

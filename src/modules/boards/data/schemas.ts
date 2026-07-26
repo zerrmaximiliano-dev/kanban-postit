@@ -5,6 +5,7 @@ export const boardRowSchema = z.object({
   name: z.string().min(1),
   owner_id: z.string().uuid(),
   org_id: z.string().uuid().nullable(),
+  color: z.string().nullable(),
 });
 
 export const columnRowSchema = z.object({

@@ -45,36 +45,40 @@ export async function deleteChecklistItem(client: SupabaseClient, itemId: string
   return notesRepo.deleteChecklistItem(client, itemId);
 }
 
-export async function dragNoteWithinColumn(
-  client: SupabaseClient,
-  allNotes: Note[],
-  noteId: string,
-  newIndex: number
-): Promise<Note[]> {
+// These compute the new list synchronously (no I/O) so the caller can update
+// the UI immediately, then call the matching persist* function without
+// awaiting it in the render path — avoids the drag feeling "stuck" while
+// waiting on the network before the drop visually settles.
+
+export function computeReorderWithinColumn(allNotes: Note[], noteId: string, newIndex: number): Note[] {
   const columnId = allNotes.find((n) => n.id === noteId)?.columnId;
   const columnNotes = allNotes.filter((n) => n.columnId === columnId);
   const reordered = reorderWithinColumn(columnNotes, noteId, newIndex);
-  await notesRepo.reorderNotes(
-    client,
-    reordered.map((n) => ({ id: n.id, order: n.order }))
-  );
   const otherNotes = allNotes.filter((n) => n.columnId !== columnId);
   return [...otherNotes, ...reordered];
 }
 
-export async function dragNoteAcrossColumns(
-  client: SupabaseClient,
+export function computeMoveToColumn(
   allNotes: Note[],
   noteId: string,
   targetColumnId: string,
   targetIndex: number
-): Promise<Note[]> {
-  const result = moveNoteToColumn(allNotes, noteId, targetColumnId, targetIndex);
-  const affected = result.filter((n) => n.columnId === targetColumnId);
-  await notesRepo.moveNote(client, noteId, targetColumnId, targetIndex);
+): Note[] {
+  return moveNoteToColumn(allNotes, noteId, targetColumnId, targetIndex);
+}
+
+export async function persistReorder(client: SupabaseClient, notes: Note[]): Promise<void> {
   await notesRepo.reorderNotes(
     client,
-    affected.map((n) => ({ id: n.id, order: n.order }))
+    notes.map((n) => ({ id: n.id, order: n.order }))
   );
-  return result;
+}
+
+export async function persistMove(
+  client: SupabaseClient,
+  noteId: string,
+  columnId: string,
+  order: number
+): Promise<void> {
+  await notesRepo.moveNote(client, noteId, columnId, order);
 }

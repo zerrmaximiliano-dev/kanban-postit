@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useBoards, useCreateBoard, useDeleteBoard } from './useBoards';
+import { useBoardTheme } from './BoardThemeContext';
+import { getBoardPalette } from '../domain/palette';
 import type { Board } from '../domain/types';
 
 export function Sidebar() {
@@ -12,7 +14,9 @@ export function Sidebar() {
   const deleteBoard = useDeleteBoard();
   const pathname = usePathname();
   const router = useRouter();
+  const { boardColor } = useBoardTheme();
   const [newBoardName, setNewBoardName] = useState('');
+  const [collapsed, setCollapsed] = useState(false);
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -36,18 +40,49 @@ export function Sidebar() {
     });
   }
 
+  const background = boardColor ? getBoardPalette(boardColor).dark : undefined;
+
+  if (collapsed) {
+    return (
+      <aside
+        className={`flex h-screen w-10 flex-col items-center p-2 text-white ${background ? '' : 'bg-gray-800'}`}
+        style={background ? { backgroundColor: background } : undefined}
+      >
+        <button
+          type="button"
+          onClick={() => setCollapsed(false)}
+          className="rounded px-1.5 py-1 text-sm hover:bg-white/10"
+          aria-label="Mostrar barra lateral"
+        >
+          »
+        </button>
+      </aside>
+    );
+  }
+
   return (
-    <aside className="flex h-screen w-56 flex-col gap-2 bg-gray-800 p-3 text-white">
-      <h2 className="mb-2 px-1 text-sm font-bold uppercase tracking-wide text-gray-400">
-        Tableros
-      </h2>
+    <aside
+      className={`flex h-screen w-56 flex-col gap-2 p-3 text-white ${background ? '' : 'bg-gray-800'}`}
+      style={background ? { backgroundColor: background } : undefined}
+    >
+      <div className="flex items-center justify-between">
+        <h2 className="px-1 text-sm font-bold uppercase tracking-wide text-gray-400">Tableros</h2>
+        <button
+          type="button"
+          onClick={() => setCollapsed(true)}
+          className="rounded px-1.5 py-1 text-sm hover:bg-white/10"
+          aria-label="Ocultar barra lateral"
+        >
+          «
+        </button>
+      </div>
 
       <form onSubmit={handleCreate} className="flex flex-col gap-1">
         <input
           value={newBoardName}
           onChange={(e) => setNewBoardName(e.target.value)}
           placeholder="Nuevo tablero..."
-          className="rounded bg-gray-700 px-2 py-1.5 text-sm placeholder-gray-400"
+          className="rounded bg-white/10 px-2 py-1.5 text-sm placeholder-gray-400"
         />
         <button
           type="submit"
@@ -71,7 +106,7 @@ export function Sidebar() {
           return (
             <div
               key={board.id}
-              className={`group flex items-center rounded ${isActive ? 'bg-purple-600' : 'hover:bg-gray-700'}`}
+              className={`group flex items-center rounded ${isActive ? 'bg-white/20' : 'hover:bg-white/10'}`}
             >
               <Link href={`/boards/${board.id}`} className="flex-1 px-2 py-1.5 text-sm">
                 {board.name}

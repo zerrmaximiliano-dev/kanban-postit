@@ -23,11 +23,21 @@ import {
   updateChecklistItem,
   deleteChecklistItem,
 } from '@/src/modules/boards/application/noteService';
-import { getMonthRange, getWeekRange, bucketNotesByDay, type DayBucket } from '../domain/bucketing';
+import {
+  getMonthRange,
+  getWeekRange,
+  getMonthLeadingBlankDays,
+  bucketNotesByDay,
+  type DayBucket,
+} from '../domain/bucketing';
+
+const WEEKDAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 import { NoteCard } from '@/src/modules/boards/ui/NoteCard';
 import { NoteEditor } from '@/src/modules/boards/ui/NoteEditor';
 import { BoardTabs } from '@/src/modules/boards/ui/BoardTabs';
 import { BoardHeader } from '@/src/modules/boards/ui/BoardHeader';
+import { useBoardTheme } from '@/src/modules/boards/ui/BoardThemeContext';
+import { getBoardPalette } from '@/src/modules/boards/domain/palette';
 import type { ChecklistItem, Note } from '@/src/modules/boards/domain/types';
 
 type ViewMode = 'month' | 'week';
@@ -66,7 +76,7 @@ function DayCell({
   const { setNodeRef, isOver } = useDroppable({ id: bucket.date });
 
   return (
-    <div ref={setNodeRef} className={`min-h-24 rounded p-1.5 ${isOver ? 'bg-sky-50' : 'bg-gray-50'}`}>
+    <div ref={setNodeRef} className={`min-h-24 rounded p-1.5 shadow-sm ${isOver ? 'bg-sky-50' : 'bg-white'}`}>
       <p className="mb-1 text-xs text-gray-400">{bucket.date.slice(8, 10)}</p>
       {bucket.notes.map((note) => (
         <DraggableNote key={note.id} note={note} onOpen={onOpenNote} onDelete={onDeleteNote} />
@@ -77,6 +87,8 @@ function DayCell({
 
 export function CalendarView({ boardId }: { boardId: string }) {
   const supabase = createClient();
+  const { boardColor } = useBoardTheme();
+  const palette = getBoardPalette(boardColor);
   const [notes, setNotes] = useState<Note[]>([]);
   const [mode, setMode] = useState<ViewMode>('month');
   const [cursor, setCursor] = useState(new Date());
@@ -99,6 +111,8 @@ export function CalendarView({ boardId }: { boardId: string }) {
       ? getMonthRange(cursor.getFullYear(), cursor.getMonth())
       : getWeekRange(cursor);
   const buckets = bucketNotesByDay(notes, range.start, range.end);
+  const leadingBlanks =
+    mode === 'month' ? getMonthLeadingBlankDays(cursor.getFullYear(), cursor.getMonth()) : 0;
 
   async function handleSaveNote(update: Parameters<typeof updateNoteDetails>[2]) {
     if (!activeNote) return;
@@ -183,7 +197,7 @@ export function CalendarView({ boardId }: { boardId: string }) {
     <div>
       <BoardHeader boardId={boardId} />
       <BoardTabs boardId={boardId} />
-      <div className="p-4">
+      <div className="min-h-[calc(100vh-3rem)] p-4" style={{ backgroundColor: palette.light }}>
         <div className="mb-3 flex items-center gap-2">
           <button
             onClick={() => setMode('month')}
@@ -206,6 +220,14 @@ export function CalendarView({ boardId }: { boardId: string }) {
           onDragEnd={handleDragEnd}
         >
           <div className="grid grid-cols-7 gap-2">
+            {WEEKDAY_LABELS.map((label) => (
+              <p key={label} className="text-center text-xs font-bold uppercase text-gray-500">
+                {label}
+              </p>
+            ))}
+            {Array.from({ length: leadingBlanks }).map((_, i) => (
+              <div key={`blank-${i}`} />
+            ))}
             {buckets.map((bucket) => (
               <DayCell
                 key={bucket.date}
