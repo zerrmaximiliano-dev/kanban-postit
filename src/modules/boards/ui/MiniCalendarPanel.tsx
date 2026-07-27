@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { getMonthRange, getMonthLeadingBlankDays } from '@/src/modules/calendar/domain/bucketing';
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@/src/modules/ui/icons';
 import type { Note } from '../domain/types';
 
 const WEEKDAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -17,12 +18,12 @@ function DayDropCell({ date, count }: { date: string; count: number }) {
   return (
     <div
       ref={setNodeRef}
-      className={`flex h-11 flex-col items-center justify-center gap-0.5 rounded border text-xs transition ${
-        isOver ? 'scale-110 border-sky-400 bg-sky-50' : 'border-gray-200 bg-white'
+      className={`flex h-11 flex-col items-center justify-center gap-0.5 rounded-control border text-xs transition-[transform,border-color,background-color] duration-150 ease-standard ${
+        isOver ? 'scale-110 border-accent-500 bg-accent-100/50' : 'border-border bg-surface'
       }`}
     >
-      <span className="text-gray-700">{date.slice(8, 10)}</span>
-      {count > 0 && <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />}
+      <span className="text-ink-muted">{date.slice(8, 10)}</span>
+      {count > 0 && <span className="h-1.5 w-1.5 rounded-full bg-accent-500" />}
     </div>
   );
 }
@@ -44,43 +45,44 @@ export function MiniCalendarPanel({ notes, accentColor }: { notes: Note[]; accen
   }
 
   return (
-    <div className="fixed bottom-0 right-4 z-20 w-72 rounded-t-lg bg-white shadow-[0_-4px_16px_rgba(0,0,0,0.15)]">
+    <div className="fixed bottom-4 right-[22rem] z-20 w-72 rounded-card bg-surface shadow-elevation-md">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between rounded-t-lg px-3 py-2 text-sm font-bold text-white"
+        className="flex w-full items-center gap-2 rounded-t-card px-3 py-2.5 text-sm font-semibold text-white transition-colors duration-150 ease-standard"
         style={{ backgroundColor: accentColor }}
       >
-        <span>📅 Abrí y arrastrá una nota aquí</span>
-        <span>{open ? '▾' : '▴'}</span>
+        <CalendarIcon className="h-4 w-4" />
+        <span className="flex-1 text-left">Abrí y arrastrá una nota aquí</span>
+        <ChevronRightIcon className={`h-4 w-4 transition-transform duration-200 ease-standard ${open ? 'rotate-90' : ''}`} />
       </button>
 
       {open && (
-        <div className="p-2">
+        <div className="p-3">
           <div className="mb-2 flex items-center justify-between">
             <button
               type="button"
               onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
-              className="px-1.5 text-gray-500 hover:text-gray-800"
+              className="rounded-control p-1 text-ink-muted transition-colors duration-150 ease-standard hover:bg-page hover:text-ink"
               aria-label="Mes anterior"
             >
-              ‹
+              <ChevronLeftIcon className="h-4 w-4" />
             </button>
-            <p className="text-xs font-medium text-gray-700">
+            <p className="text-xs font-semibold text-ink">
               {MONTH_LABELS[cursor.getMonth()]} {cursor.getFullYear()}
             </p>
             <button
               type="button"
               onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
-              className="px-1.5 text-gray-500 hover:text-gray-800"
+              className="rounded-control p-1 text-ink-muted transition-colors duration-150 ease-standard hover:bg-page hover:text-ink"
               aria-label="Mes siguiente"
             >
-              ›
+              <ChevronRightIcon className="h-4 w-4" />
             </button>
           </div>
           <div className="grid grid-cols-7 gap-1">
             {WEEKDAY_LABELS.map((label) => (
-              <p key={label} className="text-center text-[10px] font-bold uppercase text-gray-400">
+              <p key={label} className="text-center text-[10px] font-bold uppercase text-ink-faint">
                 {label}
               </p>
             ))}
