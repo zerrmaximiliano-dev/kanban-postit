@@ -353,7 +353,7 @@ export function BoardView({ boardId }: { boardId: string }) {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex flex-1 gap-3 overflow-x-auto">
+          <div className="flex flex-1 gap-3 overflow-x-hidden">
             {columns.map((column) => {
               const columnNotes = notes
                 .filter((n) => n.columnId === column.id)

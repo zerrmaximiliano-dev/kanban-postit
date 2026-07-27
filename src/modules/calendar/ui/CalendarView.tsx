@@ -212,13 +212,13 @@ export function CalendarView({ boardId }: { boardId: string }) {
         <div className="mb-3 flex items-center gap-2">
           <button
             onClick={() => setMode('month')}
-            className={`rounded px-3 py-1 text-sm ${mode === 'month' ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}
+            className={`rounded px-3 py-1 text-sm ${mode === 'month' ? 'bg-black text-white' : 'bg-gray-200'}`}
           >
             Mes
           </button>
           <button
             onClick={() => setMode('week')}
-            className={`rounded px-3 py-1 text-sm ${mode === 'week' ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}
+            className={`rounded px-3 py-1 text-sm ${mode === 'week' ? 'bg-black text-white' : 'bg-gray-200'}`}
           >
             Semana
           </button>
