@@ -45,7 +45,7 @@ export function NoteCard({
         </button>
       )}
 
-      <p className="pr-4 font-medium text-gray-900">{note.title}</p>
+      <p className="pr-4 font-medium italic text-gray-900">{note.title}</p>
 
       {note.tags.length > 0 && (
         <div className="mt-1 flex flex-wrap gap-1">
