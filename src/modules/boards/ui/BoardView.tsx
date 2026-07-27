@@ -38,6 +38,8 @@ import { BoardHeader } from './BoardHeader';
 import { MiniCalendarPanel } from './MiniCalendarPanel';
 import { useBoardTheme } from './BoardThemeContext';
 import { getBoardPalette } from '../domain/palette';
+import { Badge } from '@/src/modules/ui/Badge';
+import { MoreIcon, PlusIcon } from '@/src/modules/ui/icons';
 import type { Column, Note, ChecklistItem } from '../domain/types';
 
 const offsetOverlayAboveCursor: Modifier = ({ transform }) => ({
@@ -153,12 +155,14 @@ function BoardColumn({
     onRename(column.id, trimmed);
   }
 
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <div
-      className="flex h-full w-64 shrink-0 flex-col rounded-lg bg-white p-3 shadow-sm"
+      className="flex h-full w-72 shrink-0 flex-col rounded-card bg-surface p-4 shadow-elevation-sm transition-shadow duration-200 ease-standard"
       style={{ borderTop: `3px solid ${accentColor}` }}
     >
-      <div className="mb-3 flex shrink-0 items-center justify-between pb-1.5">
+      <div className="relative mb-3 flex shrink-0 items-center justify-between pb-1.5">
         {editing ? (
           <input
             autoFocus
@@ -172,31 +176,60 @@ function BoardColumn({
                 setEditing(false);
               }
             }}
-            className="w-full rounded border border-gray-300 px-1 py-0.5 text-sm font-bold text-gray-800"
+            className="w-full rounded-control border border-border px-2 py-1 text-sm font-bold text-ink"
           />
         ) : (
-          <h3
-            onClick={() => setEditing(true)}
-            className="cursor-text text-sm font-bold uppercase tracking-wide text-gray-700"
-            title="Click para renombrar"
-          >
-            {column.name}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3
+              onClick={() => setEditing(true)}
+              className="cursor-text text-xs font-bold uppercase tracking-wide text-ink-muted"
+              title="Click para renombrar"
+            >
+              {column.name}
+            </h3>
+            <Badge>{notes.length}</Badge>
+          </div>
         )}
         <button
           type="button"
-          onClick={() => onDeleteColumn(column)}
-          className="ml-2 text-gray-400 hover:text-red-600"
-          aria-label={`Eliminar columna ${column.name}`}
+          onClick={() => setMenuOpen((open) => !open)}
+          className="rounded-control p-1 text-ink-faint transition-colors duration-150 ease-standard hover:bg-black/5 hover:text-ink"
+          aria-label={`Opciones de la columna ${column.name}`}
         >
-          🗑
+          <MoreIcon />
         </button>
+        {menuOpen && (
+          <div className="absolute right-0 top-7 z-10 w-40 rounded-control border border-border bg-surface py-1 shadow-elevation-md">
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                setEditing(true);
+              }}
+              className="block w-full px-3 py-1.5 text-left text-sm text-ink hover:bg-page"
+            >
+              Renombrar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                onDeleteColumn(column);
+              }}
+              className="block w-full px-3 py-1.5 text-left text-sm text-danger hover:bg-danger-bg"
+            >
+              Eliminar columna
+            </button>
+          </div>
+        )}
       </div>
 
       <SortableContext items={notes.map((n) => n.id)} strategy={verticalListSortingStrategy}>
         <div
           ref={setDroppableRef}
-          className={`min-h-[3rem] flex-1 overflow-x-hidden overflow-y-auto rounded px-1 ${isOver ? 'bg-sky-50' : ''}`}
+          className={`min-h-[3rem] flex-1 overflow-x-hidden overflow-y-auto rounded-control px-1 transition-colors duration-150 ease-standard ${
+            isOver ? 'bg-accent-100/40' : ''
+          }`}
         >
           {notes.map((note) => (
             <SortableNote key={note.id} note={note} onOpen={onOpenNote} onDelete={onDeleteNote} />
@@ -206,9 +239,10 @@ function BoardColumn({
 
       <button
         onClick={() => onAddNote(column.id)}
-        className="mt-1 w-full shrink-0 rounded py-1 text-left text-sm text-gray-400 hover:bg-gray-100"
+        className="mt-1 flex w-full shrink-0 items-center gap-1.5 rounded-control py-1.5 text-left text-sm text-ink-faint transition-colors duration-150 ease-standard hover:bg-page hover:text-ink-muted"
       >
-        + Nueva nota
+        <PlusIcon className="h-3.5 w-3.5" />
+        Nueva nota
       </button>
     </div>
   );
