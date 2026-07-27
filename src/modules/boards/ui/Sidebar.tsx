@@ -121,7 +121,7 @@ export function Sidebar() {
               <button
                 type="button"
                 onClick={() => handleDelete(board)}
-                className="hidden px-2 text-white/70 transition-colors duration-150 ease-standard hover:text-danger group-hover:block"
+                className="flex px-2 text-white/70 opacity-0 transition-opacity duration-150 ease-standard hover:text-danger group-hover:opacity-100 group-focus-within:opacity-100"
                 aria-label={`Eliminar tablero ${board.name}`}
               >
                 <TrashIcon />

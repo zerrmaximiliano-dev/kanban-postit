@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ChecklistItem, Note, Priority } from '../domain/types';
 import { Button } from '@/src/modules/ui/Button';
 import { Input } from '@/src/modules/ui/Input';
@@ -44,6 +44,14 @@ export function NoteEditor({
   const [endDate, setEndDate] = useState(note.endDate ?? '');
   const [checklist, setChecklist] = useState<ChecklistItem[]>(note.checklist);
   const [newItemText, setNewItemText] = useState('');
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   function handleSave() {
     onSave({
@@ -104,7 +112,7 @@ export function NoteEditor({
         style={{ background: `radial-gradient(ellipse at top right, ${color}33 0%, var(--color-surface) 55%)` }}
         className="flex h-full w-full max-w-md flex-col gap-4 overflow-y-auto p-6 shadow-elevation-md animate-[drawer-in_250ms_ease-standard]"
       >
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} label="Título" placeholder="Título de la nota" />
+        <Input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} label="Título" placeholder="Título de la nota" />
         <div>
           <label className="mb-1.5 block text-xs font-medium text-ink-muted">Descripción</label>
           <textarea

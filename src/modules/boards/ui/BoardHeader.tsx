@@ -7,6 +7,7 @@ import { getBoard, renameBoard, updateBoardColor } from '../application/boardSer
 import { getBoardPalette, BOARD_COLOR_PRESETS } from '../domain/palette';
 import { useBoardTheme } from './BoardThemeContext';
 import { PaletteIcon } from '@/src/modules/ui/icons';
+import { useClickOutside } from '@/src/modules/ui/useClickOutside';
 
 export function BoardHeader({ boardId }: { boardId: string }) {
   const supabase = createClient();
@@ -17,6 +18,7 @@ export function BoardHeader({ boardId }: { boardId: string }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerRef = useClickOutside<HTMLDivElement>(() => setPickerOpen(false));
 
   useEffect(() => {
     let cancelled = false;
@@ -88,7 +90,7 @@ export function BoardHeader({ boardId }: { boardId: string }) {
         </h1>
       )}
 
-      <div className="relative ml-auto">
+      <div ref={pickerRef} className="relative ml-auto">
         <button
           type="button"
           onClick={() => setPickerOpen((open) => !open)}

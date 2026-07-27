@@ -100,9 +100,11 @@ function DayCell({
       }`}
     >
       <p className="mb-1 text-xs text-ink-faint">{bucket.date.slice(8, 10)}</p>
-      {visibleNotes.map((note) => (
-        <DraggableNote key={note.id} note={note} onOpen={onOpenNote} onUnschedule={onUnscheduleNote} />
-      ))}
+      <div className="max-h-40 overflow-y-auto">
+        {visibleNotes.map((note) => (
+          <DraggableNote key={note.id} note={note} onOpen={onOpenNote} onUnschedule={onUnscheduleNote} />
+        ))}
+      </div>
       {hiddenCount > 0 && (
         <button
           type="button"

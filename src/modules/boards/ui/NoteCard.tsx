@@ -50,7 +50,7 @@ export function NoteCard({
             e.stopPropagation();
             onDelete(note);
           }}
-          className="absolute right-1 top-1 hidden h-6 w-6 items-center justify-center rounded-full bg-black/10 text-ink transition-colors duration-150 ease-standard hover:bg-black/20 group-hover:flex"
+          className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/10 text-ink opacity-0 transition-opacity duration-150 ease-standard hover:bg-black/20 group-hover:opacity-100 group-focus-within:opacity-100"
           aria-label={deleteLabel}
           title={deleteLabel}
         >

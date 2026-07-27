@@ -40,6 +40,7 @@ import { useBoardTheme } from './BoardThemeContext';
 import { getBoardPalette } from '../domain/palette';
 import { Badge } from '@/src/modules/ui/Badge';
 import { MoreIcon, PlusIcon } from '@/src/modules/ui/icons';
+import { useClickOutside } from '@/src/modules/ui/useClickOutside';
 import type { Column, Note, ChecklistItem } from '../domain/types';
 
 const offsetOverlayAboveCursor: Modifier = ({ transform }) => ({
@@ -156,13 +157,14 @@ function BoardColumn({
   }
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useClickOutside<HTMLDivElement>(() => setMenuOpen(false));
 
   return (
     <div
       className="flex h-full w-72 shrink-0 flex-col rounded-card bg-surface p-4 shadow-elevation-sm transition-shadow duration-200 ease-standard"
       style={{ borderTop: `3px solid ${accentColor}` }}
     >
-      <div className="relative mb-3 flex shrink-0 items-center justify-between pb-1.5">
+      <div className="mb-3 flex shrink-0 items-center justify-between pb-1.5">
         {editing ? (
           <input
             autoFocus
@@ -190,38 +192,40 @@ function BoardColumn({
             <Badge>{notes.length}</Badge>
           </div>
         )}
-        <button
-          type="button"
-          onClick={() => setMenuOpen((open) => !open)}
-          className="rounded-control p-1 text-ink-faint transition-colors duration-150 ease-standard hover:bg-black/5 hover:text-ink"
-          aria-label={`Opciones de la columna ${column.name}`}
-        >
-          <MoreIcon />
-        </button>
-        {menuOpen && (
-          <div className="absolute right-0 top-7 z-10 w-40 rounded-card border border-border bg-surface py-1 shadow-elevation-md">
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                setEditing(true);
-              }}
-              className="block w-full px-3 py-1.5 text-left text-sm text-ink hover:bg-page"
-            >
-              Renombrar
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                onDeleteColumn(column);
-              }}
-              className="block w-full px-3 py-1.5 text-left text-sm text-danger hover:bg-danger-bg"
-            >
-              Eliminar columna
-            </button>
-          </div>
-        )}
+        <div ref={menuRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            className="rounded-control p-1 text-ink-faint transition-colors duration-150 ease-standard hover:bg-black/5 hover:text-ink"
+            aria-label={`Opciones de la columna ${column.name}`}
+          >
+            <MoreIcon />
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-7 z-10 w-40 rounded-card border border-border bg-surface py-1 shadow-elevation-md">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setEditing(true);
+                }}
+                className="block w-full px-3 py-1.5 text-left text-sm text-ink hover:bg-page"
+              >
+                Renombrar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onDeleteColumn(column);
+                }}
+                className="block w-full px-3 py-1.5 text-left text-sm text-danger hover:bg-danger-bg"
+              >
+                Eliminar columna
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <SortableContext items={notes.map((n) => n.id)} strategy={verticalListSortingStrategy}>
