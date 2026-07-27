@@ -33,9 +33,16 @@ import { NoteCard } from './NoteCard';
 import { NoteEditor } from './NoteEditor';
 import { BoardTabs } from './BoardTabs';
 import { BoardHeader } from './BoardHeader';
+import { MiniCalendarPanel } from './MiniCalendarPanel';
 import { useBoardTheme } from './BoardThemeContext';
 import { getBoardPalette } from '../domain/palette';
 import type { Column, Note, ChecklistItem } from '../domain/types';
+
+function shiftDate(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d + days));
+  return date.toISOString().slice(0, 10);
+}
 
 function noteMatchesQuery(note: Note, query: string): boolean {
   const q = query.toLowerCase();
@@ -197,6 +204,27 @@ export function BoardView({ boardId }: { boardId: string }) {
     if (!over) return;
 
     const noteId = String(active.id);
+
+    if (over.data.current?.type === 'calendar-day') {
+      const targetDate = over.data.current.date as string;
+      const draggedNote = notes.find((n) => n.id === noteId);
+      if (!draggedNote) return;
+
+      let newStartDate = targetDate;
+      let newEndDate: string | null = targetDate;
+      if (draggedNote.startDate) {
+        const dayDiff = Math.round(
+          (new Date(targetDate).getTime() - new Date(draggedNote.startDate).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        newStartDate = shiftDate(draggedNote.startDate, dayDiff);
+        newEndDate = draggedNote.endDate ? shiftDate(draggedNote.endDate, dayDiff) : null;
+      }
+
+      setNotes(notes.map((n) => (n.id === noteId ? { ...n, startDate: newStartDate, endDate: newEndDate } : n)));
+      updateNoteDetails(supabase, noteId, { startDate: newStartDate, endDate: newEndDate });
+      return;
+    }
+
     const overColumnId = (over.data.current?.columnId as string | undefined) ?? String(over.id);
     const targetColumnNotes = notes.filter((n) => n.columnId === overColumnId);
     const overIndex = targetColumnNotes.findIndex((n) => n.id === over.id);
@@ -354,6 +382,8 @@ export function BoardView({ boardId }: { boardId: string }) {
               </div>
             )}
           </DragOverlay>
+
+          <MiniCalendarPanel notes={notes} accentColor={palette.medium} />
         </DndContext>
 
         {activeNote && (

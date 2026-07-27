@@ -66,7 +66,7 @@ export function Sidebar() {
       style={background ? { backgroundColor: background } : undefined}
     >
       <div className="flex items-center justify-between">
-        <h2 className="px-1 text-sm font-bold uppercase tracking-wide text-gray-400">Tableros</h2>
+        <h2 className="px-1 text-sm font-bold uppercase tracking-wide text-white">Tableros</h2>
         <button
           type="button"
           onClick={() => setCollapsed(true)}
@@ -82,7 +82,7 @@ export function Sidebar() {
           value={newBoardName}
           onChange={(e) => setNewBoardName(e.target.value)}
           placeholder="Nuevo tablero..."
-          className="rounded bg-white/10 px-2 py-1.5 text-sm placeholder-gray-400"
+          className="rounded bg-white/10 px-2 py-1.5 text-sm text-white placeholder-white/50"
         />
         <button
           type="submit"
@@ -98,7 +98,7 @@ export function Sidebar() {
         )}
       </form>
 
-      {isLoading && <p className="px-1 text-sm text-gray-400">Cargando...</p>}
+      {isLoading && <p className="px-1 text-sm text-white/70">Cargando...</p>}
 
       <nav className="flex flex-col gap-1 overflow-y-auto">
         {boards?.map((board) => {
@@ -114,7 +114,7 @@ export function Sidebar() {
               <button
                 type="button"
                 onClick={() => handleDelete(board)}
-                className="hidden px-2 text-gray-300 hover:text-red-400 group-hover:block"
+                className="hidden px-2 text-white/70 hover:text-red-300 group-hover:block"
                 aria-label={`Eliminar tablero ${board.name}`}
               >
                 🗑
