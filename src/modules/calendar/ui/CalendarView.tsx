@@ -43,6 +43,7 @@ import { BoardTabs } from '@/src/modules/boards/ui/BoardTabs';
 import { BoardHeader } from '@/src/modules/boards/ui/BoardHeader';
 import { useBoardTheme } from '@/src/modules/boards/ui/BoardThemeContext';
 import { getBoardPalette } from '@/src/modules/boards/domain/palette';
+import { ChevronLeftIcon, ChevronRightIcon } from '@/src/modules/ui/icons';
 import type { ChecklistItem, Note } from '@/src/modules/boards/domain/types';
 
 type ViewMode = 'month' | 'week';
@@ -92,8 +93,13 @@ function DayCell({
   const hiddenCount = bucket.notes.length - visibleNotes.length;
 
   return (
-    <div ref={setNodeRef} className={`min-h-24 rounded p-1.5 shadow-sm ${isOver ? 'bg-sky-50' : 'bg-white'}`}>
-      <p className="mb-1 text-xs text-gray-400">{bucket.date.slice(8, 10)}</p>
+    <div
+      ref={setNodeRef}
+      className={`min-h-24 rounded-control p-2 shadow-elevation-sm transition-[box-shadow,background-color] duration-150 ease-standard hover:shadow-elevation-md ${
+        isOver ? 'bg-accent-100/40' : 'bg-surface'
+      }`}
+    >
+      <p className="mb-1 text-xs text-ink-faint">{bucket.date.slice(8, 10)}</p>
       {visibleNotes.map((note) => (
         <DraggableNote key={note.id} note={note} onOpen={onOpenNote} onUnschedule={onUnscheduleNote} />
       ))}
@@ -101,7 +107,7 @@ function DayCell({
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="w-full rounded py-0.5 text-left text-[10px] font-medium text-gray-500 hover:bg-gray-100"
+          className="w-full rounded-full bg-page px-2 py-0.5 text-left text-[10px] font-medium text-ink-muted transition-colors duration-150 ease-standard hover:bg-accent-100 hover:text-accent-600"
         >
           +{hiddenCount} más
         </button>
@@ -110,7 +116,7 @@ function DayCell({
         <button
           type="button"
           onClick={() => setExpanded(false)}
-          className="w-full rounded py-0.5 text-left text-[10px] font-medium text-gray-500 hover:bg-gray-100"
+          className="w-full rounded-full px-2 py-0.5 text-left text-[10px] font-medium text-ink-muted transition-colors duration-150 ease-standard hover:bg-page"
         >
           Ver menos
         </button>
@@ -262,44 +268,48 @@ export function CalendarView({ boardId }: { boardId: string }) {
       <BoardHeader boardId={boardId} />
       <BoardTabs boardId={boardId} />
       <div className="flex flex-1 flex-col overflow-hidden p-4" style={{ backgroundColor: palette.light }}>
-        <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+        <div className="mb-4 flex shrink-0 items-center justify-between gap-2">
+          <div className="flex gap-4 border-b border-border">
             <button
               onClick={() => setMode('month')}
-              className={`rounded px-3 py-1 text-sm ${mode === 'month' ? 'bg-black text-white' : 'bg-gray-200'}`}
+              className={`border-b-2 py-2 text-sm font-medium transition-colors duration-150 ease-standard ${
+                mode === 'month' ? 'border-accent-500 text-ink' : 'border-transparent text-ink-muted hover:text-ink'
+              }`}
             >
               Mes
             </button>
             <button
               onClick={() => setMode('week')}
-              className={`rounded px-3 py-1 text-sm ${mode === 'week' ? 'bg-black text-white' : 'bg-gray-200'}`}
+              className={`border-b-2 py-2 text-sm font-medium transition-colors duration-150 ease-standard ${
+                mode === 'week' ? 'border-accent-500 text-ink' : 'border-transparent text-ink-muted hover:text-ink'
+              }`}
             >
               Semana
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={goToPrevious}
-              className="rounded px-2 py-1 text-gray-500 hover:bg-gray-200 hover:text-gray-800"
+              className="rounded-control p-1.5 text-ink-muted transition-colors duration-150 ease-standard hover:bg-surface hover:text-ink"
               aria-label="Anterior"
             >
-              ‹
+              <ChevronLeftIcon />
             </button>
-            <p className="min-w-[9rem] text-center text-sm font-semibold text-gray-700">{rangeLabel}</p>
+            <p className="min-w-[9rem] text-center text-sm font-semibold text-ink">{rangeLabel}</p>
             <button
               type="button"
               onClick={goToNext}
-              className="rounded px-2 py-1 text-gray-500 hover:bg-gray-200 hover:text-gray-800"
+              className="rounded-control p-1.5 text-ink-muted transition-colors duration-150 ease-standard hover:bg-surface hover:text-ink"
               aria-label="Siguiente"
             >
-              ›
+              <ChevronRightIcon />
             </button>
             <button
               type="button"
               onClick={goToToday}
-              className="ml-1 rounded px-2 py-1 text-xs text-gray-500 underline hover:text-gray-800"
+              className="ml-2 rounded-control px-2 py-1 text-xs font-medium text-accent-600 transition-colors duration-150 ease-standard hover:bg-accent-100"
             >
               Hoy
             </button>
@@ -312,9 +322,9 @@ export function CalendarView({ boardId }: { boardId: string }) {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="mb-1 grid shrink-0 grid-cols-7 gap-2">
+          <div className="mb-1 grid shrink-0 grid-cols-7 gap-2 border-b border-border pb-2">
             {WEEKDAY_LABELS.map((label) => (
-              <p key={label} className="text-center text-xs font-bold uppercase text-gray-500">
+              <p key={label} className="text-center text-xs font-bold uppercase text-ink-faint">
                 {label}
               </p>
             ))}
