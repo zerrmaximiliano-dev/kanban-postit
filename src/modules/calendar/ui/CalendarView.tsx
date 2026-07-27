@@ -33,6 +33,10 @@ import {
 } from '../domain/bucketing';
 
 const WEEKDAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const MONTH_LABELS = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
 import { NoteCard } from '@/src/modules/boards/ui/NoteCard';
 import { NoteEditor } from '@/src/modules/boards/ui/NoteEditor';
 import { BoardTabs } from '@/src/modules/boards/ui/BoardTabs';
@@ -120,6 +124,31 @@ export function CalendarView({ boardId }: { boardId: string }) {
   const leadingBlanks =
     mode === 'month' ? getMonthLeadingBlankDays(cursor.getFullYear(), cursor.getMonth()) : 0;
 
+  const rangeLabel =
+    mode === 'month'
+      ? `${MONTH_LABELS[cursor.getMonth()]} ${cursor.getFullYear()}`
+      : `${range.start.getUTCDate()} ${MONTH_LABELS[range.start.getUTCMonth()].slice(0, 3)} — ${range.end.getUTCDate()} ${MONTH_LABELS[range.end.getUTCMonth()].slice(0, 3)} ${range.end.getUTCFullYear()}`;
+
+  function goToPrevious() {
+    setCursor((c) =>
+      mode === 'month'
+        ? new Date(c.getFullYear(), c.getMonth() - 1, 1)
+        : new Date(c.getFullYear(), c.getMonth(), c.getDate() - 7)
+    );
+  }
+
+  function goToNext() {
+    setCursor((c) =>
+      mode === 'month'
+        ? new Date(c.getFullYear(), c.getMonth() + 1, 1)
+        : new Date(c.getFullYear(), c.getMonth(), c.getDate() + 7)
+    );
+  }
+
+  function goToToday() {
+    setCursor(new Date());
+  }
+
   async function handleSaveNote(update: Parameters<typeof updateNoteDetails>[2]) {
     if (!activeNote) return;
     await updateNoteDetails(supabase, activeNote.id, update);
@@ -205,23 +234,52 @@ export function CalendarView({ boardId }: { boardId: string }) {
   }
 
   return (
-    <div>
+    <div className="flex h-full flex-col">
       <BoardHeader boardId={boardId} />
       <BoardTabs boardId={boardId} />
-      <div className="min-h-[calc(100vh-3rem)] p-4" style={{ backgroundColor: palette.light }}>
-        <div className="mb-3 flex items-center gap-2">
-          <button
-            onClick={() => setMode('month')}
-            className={`rounded px-3 py-1 text-sm ${mode === 'month' ? 'bg-black text-white' : 'bg-gray-200'}`}
-          >
-            Mes
-          </button>
-          <button
-            onClick={() => setMode('week')}
-            className={`rounded px-3 py-1 text-sm ${mode === 'week' ? 'bg-black text-white' : 'bg-gray-200'}`}
-          >
-            Semana
-          </button>
+      <div className="flex flex-1 flex-col overflow-hidden p-4" style={{ backgroundColor: palette.light }}>
+        <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setMode('month')}
+              className={`rounded px-3 py-1 text-sm ${mode === 'month' ? 'bg-black text-white' : 'bg-gray-200'}`}
+            >
+              Mes
+            </button>
+            <button
+              onClick={() => setMode('week')}
+              className={`rounded px-3 py-1 text-sm ${mode === 'week' ? 'bg-black text-white' : 'bg-gray-200'}`}
+            >
+              Semana
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={goToPrevious}
+              className="rounded px-2 py-1 text-gray-500 hover:bg-gray-200 hover:text-gray-800"
+              aria-label="Anterior"
+            >
+              ‹
+            </button>
+            <p className="min-w-[9rem] text-center text-sm font-semibold text-gray-700">{rangeLabel}</p>
+            <button
+              type="button"
+              onClick={goToNext}
+              className="rounded px-2 py-1 text-gray-500 hover:bg-gray-200 hover:text-gray-800"
+              aria-label="Siguiente"
+            >
+              ›
+            </button>
+            <button
+              type="button"
+              onClick={goToToday}
+              className="ml-1 rounded px-2 py-1 text-xs text-gray-500 underline hover:text-gray-800"
+            >
+              Hoy
+            </button>
+          </div>
         </div>
 
         <DndContext
@@ -230,23 +288,28 @@ export function CalendarView({ boardId }: { boardId: string }) {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-7 gap-2">
+          <div className="mb-1 grid shrink-0 grid-cols-7 gap-2">
             {WEEKDAY_LABELS.map((label) => (
               <p key={label} className="text-center text-xs font-bold uppercase text-gray-500">
                 {label}
               </p>
             ))}
-            {Array.from({ length: leadingBlanks }).map((_, i) => (
-              <div key={`blank-${i}`} />
-            ))}
-            {buckets.map((bucket) => (
-              <DayCell
-                key={bucket.date}
-                bucket={bucket}
-                onOpenNote={setActiveNote}
-                onUnscheduleNote={handleUnscheduleNote}
-              />
-            ))}
+          </div>
+
+          <div className="flex-1 overflow-x-hidden overflow-y-auto">
+            <div className="grid grid-cols-7 gap-2">
+              {Array.from({ length: leadingBlanks }).map((_, i) => (
+                <div key={`blank-${i}`} />
+              ))}
+              {buckets.map((bucket) => (
+                <DayCell
+                  key={bucket.date}
+                  bucket={bucket}
+                  onOpenNote={setActiveNote}
+                  onUnscheduleNote={handleUnscheduleNote}
+                />
+              ))}
+            </div>
           </div>
 
           <DragOverlay modifiers={[offsetOverlayAboveCursor]}>
