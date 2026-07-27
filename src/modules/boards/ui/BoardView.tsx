@@ -161,7 +161,7 @@ function BoardColumn({
       <SortableContext items={notes.map((n) => n.id)} strategy={verticalListSortingStrategy}>
         <div
           ref={setDroppableRef}
-          className={`min-h-[3rem] flex-1 overflow-y-auto rounded ${isOver ? 'bg-sky-50' : ''}`}
+          className={`min-h-[3rem] flex-1 overflow-x-hidden overflow-y-auto rounded ${isOver ? 'bg-sky-50' : ''}`}
         >
           {notes.map((note) => (
             <SortableNote key={note.id} note={note} onOpen={onOpenNote} onDelete={onDeleteNote} />
