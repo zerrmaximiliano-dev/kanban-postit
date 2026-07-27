@@ -21,13 +21,11 @@ export function NoteCard({
   onOpen,
   onDelete,
   deleteLabel = 'Eliminar nota',
-  pulse = false,
 }: {
   note: Note;
   onOpen: (note: Note) => void;
   onDelete?: (note: Note) => void;
   deleteLabel?: string;
-  pulse?: boolean;
 }) {
   const doneCount = note.checklist.filter((c) => c.done).length;
 
@@ -35,7 +33,7 @@ export function NoteCard({
     <div
       onDoubleClick={() => onOpen(note)}
       style={{ backgroundColor: note.color, transform: `rotate(${tiltFor(note.id)}deg)` }}
-      className={`group relative mb-3 cursor-pointer rounded-[2px] p-3 text-sm shadow-[2px_3px_6px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 hover:shadow-[3px_5px_10px_rgba(0,0,0,0.3)] ${pulse ? 'animate-note-pulse' : ''}`}
+      className="group relative mb-3 cursor-pointer rounded-[2px] p-3 text-sm shadow-[2px_3px_6px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 hover:shadow-[3px_5px_10px_rgba(0,0,0,0.3)]"
     >
       {onDelete && (
         <button

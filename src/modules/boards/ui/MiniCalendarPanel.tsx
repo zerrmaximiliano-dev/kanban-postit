@@ -11,15 +11,15 @@ const MONTH_LABELS = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ];
 
-function DayDropCell({ date, count, flash }: { date: string; count: number; flash: boolean }) {
+function DayDropCell({ date, count }: { date: string; count: number }) {
   const { setNodeRef, isOver } = useDroppable({ id: `calendar-day:${date}`, data: { type: 'calendar-day', date } });
 
   return (
     <div
       ref={setNodeRef}
       className={`flex h-11 flex-col items-center justify-center gap-0.5 rounded border text-xs transition ${
-        isOver ? 'border-sky-400 bg-sky-50' : 'border-gray-200 bg-white'
-      } ${flash ? 'animate-note-pulse' : ''}`}
+        isOver ? 'scale-110 border-sky-400 bg-sky-50' : 'border-gray-200 bg-white'
+      }`}
     >
       <span className="text-gray-700">{date.slice(8, 10)}</span>
       {count > 0 && <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />}
@@ -27,15 +27,7 @@ function DayDropCell({ date, count, flash }: { date: string; count: number; flas
   );
 }
 
-export function MiniCalendarPanel({
-  notes,
-  accentColor,
-  flashDate = null,
-}: {
-  notes: Note[];
-  accentColor: string;
-  flashDate?: string | null;
-}) {
+export function MiniCalendarPanel({ notes, accentColor }: { notes: Note[]; accentColor: string }) {
   const [open, setOpen] = useState(false);
   const [cursor, setCursor] = useState(() => new Date());
 
@@ -96,7 +88,7 @@ export function MiniCalendarPanel({
               <div key={`blank-${i}`} />
             ))}
             {days.map((date) => (
-              <DayDropCell key={date} date={date} count={countForDay(date)} flash={date === flashDate} />
+              <DayDropCell key={date} date={date} count={countForDay(date)} />
             ))}
           </div>
         </div>

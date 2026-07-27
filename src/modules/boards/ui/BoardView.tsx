@@ -5,6 +5,7 @@ import {
   closestCenter,
   DndContext,
   DragEndEvent,
+  DragOverEvent,
   DragOverlay,
   DragStartEvent,
   Modifier,
@@ -50,30 +51,6 @@ function shiftDate(dateStr: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-interface FlyingNoteState {
-  note: Note;
-  origin: { top: number; left: number; width: number; height: number };
-  transform: string;
-  animate: boolean;
-}
-
-function FlyingNoteOverlay({ flight }: { flight: FlyingNoteState }) {
-  return (
-    <div
-      className={`pointer-events-none fixed z-50 ${flight.animate ? 'transition-transform duration-300 ease-in-out' : ''}`}
-      style={{
-        top: flight.origin.top,
-        left: flight.origin.left,
-        width: flight.origin.width,
-        height: flight.origin.height,
-        transform: flight.transform,
-      }}
-    >
-      <NoteCard note={flight.note} onOpen={() => {}} />
-    </div>
-  );
-}
-
 function noteMatchesQuery(note: Note, query: string): boolean {
   const q = query.toLowerCase();
   return (
@@ -87,12 +64,10 @@ function SortableNote({
   note,
   onOpen,
   onDelete,
-  pulse,
 }: {
   note: Note;
   onOpen: (n: Note) => void;
   onDelete: (n: Note) => void;
-  pulse: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: note.id,
@@ -103,10 +78,11 @@ function SortableNote({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      className="transition-opacity duration-300"
       {...attributes}
       {...listeners}
     >
-      <NoteCard note={note} onOpen={onOpen} onDelete={onDelete} pulse={pulse} />
+      <NoteCard note={note} onOpen={onOpen} onDelete={onDelete} />
     </div>
   );
 }
@@ -115,7 +91,6 @@ function BoardColumn({
   column,
   notes,
   accentColor,
-  pulseNoteId,
   onAddNote,
   onOpenNote,
   onDeleteNote,
@@ -125,7 +100,6 @@ function BoardColumn({
   column: Column;
   notes: Note[];
   accentColor: string;
-  pulseNoteId: string | null;
   onAddNote: (columnId: string) => void;
   onOpenNote: (n: Note) => void;
   onDeleteNote: (n: Note) => void;
@@ -192,13 +166,7 @@ function BoardColumn({
           className={`min-h-[3rem] flex-1 overflow-x-hidden overflow-y-auto rounded px-1 ${isOver ? 'bg-sky-50' : ''}`}
         >
           {notes.map((note) => (
-            <SortableNote
-              key={note.id}
-              note={note}
-              onOpen={onOpenNote}
-              onDelete={onDeleteNote}
-              pulse={note.id === pulseNoteId}
-            />
+            <SortableNote key={note.id} note={note} onOpen={onOpenNote} onDelete={onDeleteNote} />
           ))}
         </div>
       </SortableContext>
@@ -223,8 +191,7 @@ export function BoardView({ boardId }: { boardId: string }) {
   const [newColumnName, setNewColumnName] = useState('');
   const [draggingNote, setDraggingNote] = useState<Note | null>(null);
   const [query, setQuery] = useState('');
-  const [justScheduled, setJustScheduled] = useState<{ noteId: string; date: string } | null>(null);
-  const [flyingNote, setFlyingNote] = useState<FlyingNoteState | null>(null);
+  const [overCalendarDay, setOverCalendarDay] = useState(false);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -243,22 +210,22 @@ export function BoardView({ boardId }: { boardId: string }) {
     setDraggingNote(note ?? null);
   }
 
+  function handleDragOver(event: DragOverEvent) {
+    setOverCalendarDay(event.over?.data.current?.type === 'calendar-day');
+  }
+
   function handleDragEnd(event: DragEndEvent) {
+    setDraggingNote(null);
+    setOverCalendarDay(false);
     const { active, over } = event;
-    if (!over) {
-      setDraggingNote(null);
-      return;
-    }
+    if (!over) return;
 
     const noteId = String(active.id);
 
     if (over.data.current?.type === 'calendar-day') {
       const targetDate = over.data.current.date as string;
       const draggedNote = notes.find((n) => n.id === noteId);
-      if (!draggedNote) {
-        setDraggingNote(null);
-        return;
-      }
+      if (!draggedNote) return;
 
       let newStartDate = targetDate;
       let newEndDate: string | null = targetDate;
@@ -272,40 +239,8 @@ export function BoardView({ boardId }: { boardId: string }) {
 
       setNotes(notes.map((n) => (n.id === noteId ? { ...n, startDate: newStartDate, endDate: newEndDate } : n)));
       updateNoteDetails(supabase, noteId, { startDate: newStartDate, endDate: newEndDate });
-
-      setDraggingNote(null);
-
-      // Drive a custom fly-into-the-calendar-then-back-to-the-column animation:
-      // mount a clone scaled/translated exactly onto the day cell (no transition),
-      // then on the next tick clear that transform so the transition CSS class
-      // animates it visibly traveling back to the note's real column position.
-      const dayRect = over.rect;
-      const originRect = active.rect.current.initial ?? active.rect.current.translated;
-      if (dayRect && originRect && originRect.width > 0 && originRect.height > 0) {
-        const scaleX = dayRect.width / originRect.width;
-        const scaleY = dayRect.height / originRect.height;
-        const translateX = dayRect.left + dayRect.width / 2 - (originRect.left + originRect.width / 2);
-        const translateY = dayRect.top + dayRect.height / 2 - (originRect.top + originRect.height / 2);
-
-        setFlyingNote({
-          note: draggedNote,
-          origin: { top: originRect.top, left: originRect.left, width: originRect.width, height: originRect.height },
-          transform: `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`,
-          animate: false,
-        });
-
-        setTimeout(() => {
-          setFlyingNote((f) => (f ? { ...f, transform: 'translate(0px, 0px) scale(1, 1)', animate: true } : f));
-        }, 20);
-        setTimeout(() => setFlyingNote(null), 420);
-      }
-
-      setJustScheduled({ noteId, date: targetDate });
-      setTimeout(() => setJustScheduled(null), 700);
       return;
     }
-
-    setDraggingNote(null);
 
     const overColumnId = (over.data.current?.columnId as string | undefined) ?? String(over.id);
     const targetColumnNotes = notes.filter((n) => n.columnId === overColumnId);
@@ -424,6 +359,7 @@ export function BoardView({ boardId }: { boardId: string }) {
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
           <div className="flex flex-1 gap-3 overflow-x-auto overflow-y-hidden">
@@ -438,7 +374,6 @@ export function BoardView({ boardId }: { boardId: string }) {
                   column={column}
                   notes={columnNotes}
                   accentColor={palette.medium}
-                  pulseNoteId={justScheduled?.noteId ?? null}
                   onAddNote={handleAddNote}
                   onOpenNote={setActiveNote}
                   onDeleteNote={handleDeleteNote}
@@ -460,15 +395,17 @@ export function BoardView({ boardId }: { boardId: string }) {
 
           <DragOverlay modifiers={[offsetOverlayAboveCursor]}>
             {draggingNote && (
-              <div className="w-48 scale-90 opacity-90">
+              <div
+                className={`w-48 origin-center opacity-90 transition-transform duration-200 ease-in ${
+                  overCalendarDay ? 'scale-[0.3]' : 'scale-90'
+                }`}
+              >
                 <NoteCard note={draggingNote} onOpen={() => {}} />
               </div>
             )}
           </DragOverlay>
 
-          {flyingNote && <FlyingNoteOverlay flight={flyingNote} />}
-
-          <MiniCalendarPanel notes={notes} accentColor={palette.dark} flashDate={justScheduled?.date ?? null} />
+          <MiniCalendarPanel notes={notes} accentColor={palette.dark} />
         </DndContext>
 
         {activeNote && (
