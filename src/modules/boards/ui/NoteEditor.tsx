@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import type { ChecklistItem, Note, Priority } from '../domain/types';
+import { Button } from '@/src/modules/ui/Button';
+import { Input } from '@/src/modules/ui/Input';
+import { TrashIcon } from '@/src/modules/ui/icons';
 
 const COLORS = ['#FDE8C8', '#FBD4D4', '#D6ECD2', '#CFE3F5', '#E6D9F2', '#FCF4CB'];
 
@@ -95,29 +98,27 @@ export function NoteEditor({
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/30 backdrop-blur-[2px]" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{ background: `radial-gradient(ellipse at center, #ffffff 60%, ${color}b3 100%)` }}
-        className="max-h-[85vh] w-96 space-y-3 overflow-y-auto rounded-lg p-5 shadow-xl"
+        style={{ background: `radial-gradient(ellipse at top right, ${color}33 0%, var(--color-surface) 55%)` }}
+        className="flex h-full w-full max-w-md flex-col gap-4 overflow-y-auto p-6 shadow-elevation-md animate-[drawer-in_250ms_ease-standard]"
       >
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded border px-2 py-1.5 font-medium text-gray-900"
-          placeholder="Título"
-        />
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full rounded border px-2 py-1.5 text-sm text-gray-900"
-          rows={3}
-          placeholder="Descripción / observaciones"
-        />
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} label="Título" placeholder="Título de la nota" />
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-ink-muted">Descripción</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-ink transition-[border-color,box-shadow] duration-150 ease-standard focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-100"
+            rows={3}
+            placeholder="Descripción / observaciones"
+          />
+        </div>
 
         <div>
-          <p className="mb-1 text-xs font-medium text-gray-500">Color</p>
-          <div className="flex flex-wrap items-center gap-1.5">
+          <p className="mb-1.5 text-xs font-medium text-ink-muted">Color</p>
+          <div className="flex flex-wrap items-center gap-2">
             {COLORS.map((c) => (
               <button
                 key={c}
@@ -125,7 +126,9 @@ export function NoteEditor({
                 onClick={() => setColor(c)}
                 style={{ backgroundColor: c }}
                 aria-label={`Color ${c}`}
-                className={`h-6 w-6 rounded-full border-2 ${color === c ? 'border-gray-900' : 'border-transparent'}`}
+                className={`h-7 w-7 rounded-full transition-transform duration-150 ease-standard hover:scale-110 ${
+                  color === c ? 'ring-2 ring-accent-500 ring-offset-2' : 'ring-1 ring-black/10'
+                }`}
               />
             ))}
             <input
@@ -133,36 +136,34 @@ export function NoteEditor({
               value={color}
               onChange={(e) => setColor(e.target.value)}
               aria-label="Color personalizado"
-              className="h-6 w-7 cursor-pointer rounded border border-gray-300 p-0"
+              className="h-7 w-9 cursor-pointer rounded-control border border-border p-0"
             />
           </div>
         </div>
 
-        <select
-          value={priority}
-          onChange={(e) => setPriority(e.target.value as Priority)}
-          className="w-full rounded border px-2 py-1.5 text-sm text-gray-900"
-        >
-          <option value="low">Prioridad baja</option>
-          <option value="medium">Prioridad media</option>
-          <option value="high">Prioridad alta</option>
-        </select>
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-ink-muted">Prioridad</label>
+          <select
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as Priority)}
+            className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-100"
+          >
+            <option value="low">Prioridad baja</option>
+            <option value="medium">Prioridad media</option>
+            <option value="high">Prioridad alta</option>
+          </select>
+        </div>
 
-        <input
-          value={tagsInput}
-          onChange={(e) => setTagsInput(e.target.value)}
-          className="w-full rounded border px-2 py-1.5 text-sm text-gray-900"
-          placeholder="Tags separados por coma"
-        />
+        <Input value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} label="Tags" placeholder="Separados por coma" />
 
         <div>
-          <p className="mb-1 text-xs font-medium text-gray-500">Fechas (para el calendario)</p>
+          <p className="mb-1.5 text-xs font-medium text-ink-muted">Fechas (para el calendario)</p>
           <div className="flex gap-2">
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full rounded border px-2 py-1.5 text-sm text-gray-900"
+              className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-100"
               aria-label="Fecha de inicio"
             />
             <input
@@ -170,70 +171,69 @@ export function NoteEditor({
               value={endDate}
               min={startDate || undefined}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full rounded border px-2 py-1.5 text-sm text-gray-900"
+              className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-100"
               aria-label="Fecha de fin"
             />
           </div>
         </div>
 
         <div>
-          <p className="mb-1 text-xs font-medium text-gray-500">Lista de tareas</p>
+          <p className="mb-1.5 text-xs font-medium text-ink-muted">Lista de tareas</p>
           <div className="space-y-1">
             {checklist.map((item) => (
-              <div key={item.id} className="flex items-center gap-2">
+              <div key={item.id} className="group flex items-center gap-2 rounded-control px-1 py-0.5 hover:bg-page">
                 <input
                   type="checkbox"
                   checked={item.done}
                   onChange={() => handleToggleItem(item)}
-                  className="h-4 w-4 shrink-0"
+                  className="h-4 w-4 shrink-0 accent-accent-500"
                 />
                 <input
                   value={item.text}
                   onChange={(e) => handleEditItemText(item, e.target.value)}
                   onBlur={() => commitItemText(item)}
-                  className={`w-full rounded border-none bg-transparent px-1 py-0.5 text-sm text-gray-900 focus:bg-white focus:ring-1 focus:ring-gray-300 ${
-                    item.done ? 'text-gray-400 line-through' : ''
+                  className={`w-full rounded-control border-none bg-transparent px-1 py-0.5 text-sm text-ink focus:bg-surface focus:ring-1 focus:ring-border-strong ${
+                    item.done ? 'text-ink-faint line-through' : ''
                   }`}
                 />
                 <button
                   type="button"
                   onClick={() => handleDeleteItem(item)}
-                  className="shrink-0 text-gray-400 hover:text-red-600"
+                  className="shrink-0 text-ink-faint opacity-0 transition-opacity duration-150 ease-standard hover:text-danger group-hover:opacity-100"
                   aria-label="Eliminar tarea"
                 >
-                  ×
+                  <TrashIcon className="h-3.5 w-3.5" />
                 </button>
               </div>
             ))}
           </div>
-          <form onSubmit={handleAddItem} className="mt-1.5 flex gap-1.5">
+          <form onSubmit={handleAddItem} className="mt-2 flex gap-2">
             <input
               value={newItemText}
               onChange={(e) => setNewItemText(e.target.value)}
-              placeholder="+ Agregar tarea"
-              className="w-full rounded border px-2 py-1 text-sm text-gray-900"
+              placeholder="Agregar tarea"
+              className="w-full rounded-control border border-border bg-surface px-3 py-1.5 text-sm text-ink focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-100"
             />
-            <button type="submit" className="shrink-0 rounded bg-gray-200 px-2 py-1 text-sm text-gray-700">
+            <Button type="submit" variant="secondary" className="shrink-0">
               Agregar
-            </button>
+            </Button>
           </form>
         </div>
 
-        <div className="flex items-center justify-between pt-2">
+        <div className="mt-auto flex items-center justify-between border-t border-border pt-4">
           {onDelete ? (
-            <button onClick={handleDelete} className="rounded px-3 py-1.5 text-sm text-red-600 hover:bg-red-50">
+            <Button variant="danger" onClick={handleDelete}>
+              <TrashIcon className="h-3.5 w-3.5" />
               Eliminar
-            </button>
+            </Button>
           ) : (
             <span />
           )}
           <div className="flex gap-2">
-            <button onClick={onClose} className="rounded px-3 py-1.5 text-sm text-gray-600">
+            <Button variant="ghost" onClick={onClose}>
               Cancelar
-            </button>
-            <button onClick={handleSave} className="rounded bg-purple-600 px-3 py-1.5 text-sm text-white">
-              Guardar
-            </button>
+            </Button>
+            <Button onClick={handleSave}>Guardar</Button>
           </div>
         </div>
       </div>
