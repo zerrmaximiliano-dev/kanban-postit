@@ -8,16 +8,22 @@ export function BoardTabs({ boardId }: { boardId: string }) {
   const isCalendar = pathname?.endsWith('/calendar');
 
   return (
-    <div className="flex gap-1 border-b px-4 pt-3">
+    <div className="flex gap-6 border-b border-border bg-surface px-6">
       <Link
         href={`/boards/${boardId}`}
-        className={`rounded-t px-3 py-1.5 text-sm ${!isCalendar ? 'bg-white font-medium' : 'text-gray-500'}`}
+        aria-current={!isCalendar ? 'page' : undefined}
+        className={`border-b-2 py-3 text-sm font-medium transition-colors duration-150 ease-standard ${
+          !isCalendar ? 'border-accent-500 text-ink' : 'border-transparent text-ink-muted hover:text-ink'
+        }`}
       >
         Board
       </Link>
       <Link
         href={`/boards/${boardId}/calendar`}
-        className={`rounded-t px-3 py-1.5 text-sm ${isCalendar ? 'bg-white font-medium' : 'text-gray-500'}`}
+        aria-current={isCalendar ? 'page' : undefined}
+        className={`border-b-2 py-3 text-sm font-medium transition-colors duration-150 ease-standard ${
+          isCalendar ? 'border-accent-500 text-ink' : 'border-transparent text-ink-muted hover:text-ink'
+        }`}
       >
         Calendario
       </Link>
