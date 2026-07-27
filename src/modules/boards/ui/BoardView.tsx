@@ -94,15 +94,28 @@ function SortableNote({
     data: { columnId: note.columnId },
   });
 
+  const revealMask = 'radial-gradient(circle at center, transparent var(--reveal), black var(--reveal))';
+
   return (
     <div
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
-      className="transition-opacity duration-500 ease-out"
+      style={{ transform: CSS.Transform.toString(transform), transition, position: 'relative' }}
       {...attributes}
       {...listeners}
     >
       <NoteCard note={note} onOpen={onOpen} onDelete={onDelete} />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-[2px] bg-white/60"
+        style={
+          {
+            '--reveal': isDragging ? '0%' : '120%',
+            transition: '--reveal 900ms ease-out',
+            maskImage: revealMask,
+            WebkitMaskImage: revealMask,
+          } as React.CSSProperties
+        }
+      />
     </div>
   );
 }

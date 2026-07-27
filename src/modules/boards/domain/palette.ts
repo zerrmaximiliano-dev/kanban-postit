@@ -73,6 +73,17 @@ function clamp(value: number, min: number, max: number): number {
 
 export function getBoardPalette(baseColor: string | null): BoardPalette {
   const { h, s } = hexToHsl(baseColor ?? DEFAULT_BASE);
+
+  // Grayscale/classic base colors (near-zero saturation) must stay grayscale —
+  // the usual saturation clamp would otherwise tint them with a stray hue.
+  if (s < 4) {
+    return {
+      dark: hslToHex(0, 0, 20),
+      medium: hslToHex(0, 0, 45),
+      light: hslToHex(0, 0, 97),
+    };
+  }
+
   return {
     dark: hslToHex(h, clamp(s, 25, 60), 38),
     medium: hslToHex(h, clamp(s, 20, 55), 58),
@@ -83,6 +94,7 @@ export function getBoardPalette(baseColor: string | null): BoardPalette {
 // The 12-hue color wheel: each preset is the "true" hue from the wheel;
 // getBoardPalette derives the dark/medium/light tones from it.
 export const BOARD_COLOR_PRESETS = [
+  { name: 'Clásico (blanco y negro)', color: '#1A1A1A' },
   { name: 'Rojo', color: '#D0342C' },
   { name: 'Rojo anaranjado', color: '#E4572E' },
   { name: 'Anaranjado', color: '#F2811D' },
