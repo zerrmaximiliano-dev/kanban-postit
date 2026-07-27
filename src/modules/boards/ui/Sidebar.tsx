@@ -6,6 +6,10 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useBoards, useCreateBoard, useDeleteBoard } from './useBoards';
 import { useBoardTheme } from './BoardThemeContext';
 import { getBoardPalette } from '../domain/palette';
+import { Button } from '@/src/modules/ui/Button';
+import { Input } from '@/src/modules/ui/Input';
+import { useToast } from '@/src/modules/ui/Toast';
+import { ChevronsLeftIcon, ChevronsRightIcon, TrashIcon } from '@/src/modules/ui/icons';
 import type { Board } from '../domain/types';
 
 export function Sidebar() {
@@ -15,6 +19,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { boardColor } = useBoardTheme();
+  const { showToast } = useToast();
   const [newBoardName, setNewBoardName] = useState('');
   const [collapsed, setCollapsed] = useState(false);
 
@@ -23,7 +28,11 @@ export function Sidebar() {
     const name = newBoardName.trim();
     if (!name) return;
     createBoard.mutate(name, {
-      onSuccess: () => setNewBoardName(''),
+      onSuccess: () => {
+        setNewBoardName('');
+        showToast('Tablero creado');
+      },
+      onError: () => showToast('No se pudo crear el tablero', 'danger'),
     });
   }
 
@@ -40,21 +49,22 @@ export function Sidebar() {
     });
   }
 
-  const background = boardColor ? getBoardPalette(boardColor).medium : undefined;
+  const background = boardColor ? getBoardPalette(boardColor).dark : '#1B4B5A';
 
   if (collapsed) {
     return (
       <aside
-        className={`flex h-screen w-10 flex-col items-center p-2 text-white ${background ? '' : 'bg-gray-800'}`}
-        style={background ? { backgroundColor: background } : undefined}
+        className="flex h-screen w-12 shrink-0 flex-col items-center gap-3 py-4 text-white"
+        style={{ background: `linear-gradient(180deg, ${background}, color-mix(in srgb, ${background} 80%, black))` }}
       >
+        <div className="h-6 w-6 rounded-control bg-accent-500" aria-hidden="true" />
         <button
           type="button"
           onClick={() => setCollapsed(false)}
-          className="rounded px-1.5 py-1 text-sm hover:bg-white/10"
+          className="rounded-control p-1.5 text-white/70 transition-colors duration-150 ease-standard hover:bg-white/10 hover:text-white"
           aria-label="Mostrar barra lateral"
         >
-          »
+          <ChevronsRightIcon />
         </button>
       </aside>
     );
@@ -62,62 +72,59 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`flex h-screen w-56 flex-col gap-2 p-3 text-white ${background ? '' : 'bg-gray-800'}`}
-      style={background ? { backgroundColor: background } : undefined}
+      className="flex h-screen w-64 shrink-0 flex-col gap-4 p-4 text-white"
+      style={{ background: `linear-gradient(180deg, ${background}, color-mix(in srgb, ${background} 80%, black))` }}
     >
       <div className="flex items-center justify-between">
-        <h2 className="px-1 text-sm font-bold uppercase tracking-wide text-white">Tableros</h2>
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 rounded-control bg-accent-500" aria-hidden="true" />
+          <h2 className="text-xs font-bold uppercase tracking-wide text-white/70">Tableros</h2>
+        </div>
         <button
           type="button"
           onClick={() => setCollapsed(true)}
-          className="rounded px-1.5 py-1 text-sm hover:bg-white/10"
+          className="rounded-control p-1.5 text-white/70 transition-colors duration-150 ease-standard hover:bg-white/10 hover:text-white"
           aria-label="Ocultar barra lateral"
         >
-          «
+          <ChevronsLeftIcon />
         </button>
       </div>
 
-      <form onSubmit={handleCreate} className="flex flex-col gap-1">
-        <input
+      <form onSubmit={handleCreate} className="flex flex-col gap-2">
+        <Input
           value={newBoardName}
           onChange={(e) => setNewBoardName(e.target.value)}
           placeholder="Nuevo tablero..."
-          className="rounded bg-white/10 px-2 py-1.5 text-sm text-white placeholder-white/50"
+          className="border-white/15 bg-white/10 text-white placeholder-white/50 focus:border-accent-500 focus:ring-accent-500/30"
         />
-        <button
-          type="submit"
-          disabled={createBoard.isPending}
-          className="rounded bg-black px-2 py-1.5 text-sm text-white hover:bg-gray-800 disabled:opacity-50"
-        >
-          {createBoard.isPending ? 'Creando...' : '+ Crear tablero'}
-        </button>
-        {createBoard.isError && (
-          <p className="text-xs text-red-400">
-            No se pudo crear el tablero. Intentá de nuevo.
-          </p>
-        )}
+        <Button type="submit" loading={createBoard.isPending} disabled={createBoard.isPending}>
+          {createBoard.isPending ? 'Creando...' : 'Crear tablero'}
+        </Button>
       </form>
 
       {isLoading && <p className="px-1 text-sm text-white/70">Cargando...</p>}
 
-      <nav className="flex flex-col gap-1 overflow-y-auto">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
         {boards?.map((board) => {
           const isActive = pathname?.startsWith(`/boards/${board.id}`);
           return (
             <div
               key={board.id}
-              className={`group flex items-center rounded ${isActive ? 'bg-white/20' : 'hover:bg-white/10'}`}
+              className={`group flex items-center rounded-control transition-colors duration-150 ease-standard ${
+                isActive ? 'bg-white/15' : 'hover:bg-white/10'
+              }`}
+              style={isActive ? { boxShadow: 'inset 3px 0 0 0 var(--color-accent-500)' } : undefined}
             >
-              <Link href={`/boards/${board.id}`} className="flex-1 px-2 py-1.5 text-sm">
+              <Link href={`/boards/${board.id}`} className="flex-1 truncate px-3 py-2 text-sm">
                 {board.name}
               </Link>
               <button
                 type="button"
                 onClick={() => handleDelete(board)}
-                className="hidden px-2 text-white/70 hover:text-red-300 group-hover:block"
+                className="hidden px-2 text-white/70 transition-colors duration-150 ease-standard hover:text-danger group-hover:block"
                 aria-label={`Eliminar tablero ${board.name}`}
               >
-                🗑
+                <TrashIcon />
               </button>
             </div>
           );
