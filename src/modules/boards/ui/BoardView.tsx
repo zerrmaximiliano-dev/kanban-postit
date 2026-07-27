@@ -63,10 +63,12 @@ function SortableNote({
   note,
   onOpen,
   onDelete,
+  pulse,
 }: {
   note: Note;
   onOpen: (n: Note) => void;
   onDelete: (n: Note) => void;
+  pulse: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: note.id,
@@ -80,7 +82,7 @@ function SortableNote({
       {...attributes}
       {...listeners}
     >
-      <NoteCard note={note} onOpen={onOpen} onDelete={onDelete} />
+      <NoteCard note={note} onOpen={onOpen} onDelete={onDelete} pulse={pulse} />
     </div>
   );
 }
@@ -89,6 +91,7 @@ function BoardColumn({
   column,
   notes,
   accentColor,
+  pulseNoteId,
   onAddNote,
   onOpenNote,
   onDeleteNote,
@@ -98,6 +101,7 @@ function BoardColumn({
   column: Column;
   notes: Note[];
   accentColor: string;
+  pulseNoteId: string | null;
   onAddNote: (columnId: string) => void;
   onOpenNote: (n: Note) => void;
   onDeleteNote: (n: Note) => void;
@@ -164,7 +168,13 @@ function BoardColumn({
           className={`min-h-[3rem] flex-1 overflow-x-hidden overflow-y-auto rounded px-1 ${isOver ? 'bg-sky-50' : ''}`}
         >
           {notes.map((note) => (
-            <SortableNote key={note.id} note={note} onOpen={onOpenNote} onDelete={onDeleteNote} />
+            <SortableNote
+              key={note.id}
+              note={note}
+              onOpen={onOpenNote}
+              onDelete={onDeleteNote}
+              pulse={note.id === pulseNoteId}
+            />
           ))}
         </div>
       </SortableContext>
@@ -189,6 +199,7 @@ export function BoardView({ boardId }: { boardId: string }) {
   const [newColumnName, setNewColumnName] = useState('');
   const [draggingNote, setDraggingNote] = useState<Note | null>(null);
   const [query, setQuery] = useState('');
+  const [justScheduled, setJustScheduled] = useState<{ noteId: string; date: string } | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -208,16 +219,21 @@ export function BoardView({ boardId }: { boardId: string }) {
   }
 
   function handleDragEnd(event: DragEndEvent) {
-    setDraggingNote(null);
     const { active, over } = event;
-    if (!over) return;
+    if (!over) {
+      setDraggingNote(null);
+      return;
+    }
 
     const noteId = String(active.id);
 
     if (over.data.current?.type === 'calendar-day') {
       const targetDate = over.data.current.date as string;
       const draggedNote = notes.find((n) => n.id === noteId);
-      if (!draggedNote) return;
+      if (!draggedNote) {
+        setDraggingNote(null);
+        return;
+      }
 
       let newStartDate = targetDate;
       let newEndDate: string | null = targetDate;
@@ -231,8 +247,17 @@ export function BoardView({ boardId }: { boardId: string }) {
 
       setNotes(notes.map((n) => (n.id === noteId ? { ...n, startDate: newStartDate, endDate: newEndDate } : n)));
       updateNoteDetails(supabase, noteId, { startDate: newStartDate, endDate: newEndDate });
+
+      // Keep the overlay mounted through dnd-kit's default drop animation so the
+      // note visibly flies from the calendar day back to its column position,
+      // then pulse the real card to confirm the schedule change landed.
+      setTimeout(() => setDraggingNote(null), 250);
+      setJustScheduled({ noteId, date: targetDate });
+      setTimeout(() => setJustScheduled(null), 1050);
       return;
     }
+
+    setDraggingNote(null);
 
     const overColumnId = (over.data.current?.columnId as string | undefined) ?? String(over.id);
     const targetColumnNotes = notes.filter((n) => n.columnId === overColumnId);
@@ -365,6 +390,7 @@ export function BoardView({ boardId }: { boardId: string }) {
                   column={column}
                   notes={columnNotes}
                   accentColor={palette.medium}
+                  pulseNoteId={justScheduled?.noteId ?? null}
                   onAddNote={handleAddNote}
                   onOpenNote={setActiveNote}
                   onDeleteNote={handleDeleteNote}
@@ -392,7 +418,7 @@ export function BoardView({ boardId }: { boardId: string }) {
             )}
           </DragOverlay>
 
-          <MiniCalendarPanel notes={notes} accentColor={palette.dark} />
+          <MiniCalendarPanel notes={notes} accentColor={palette.dark} flashDate={justScheduled?.date ?? null} />
         </DndContext>
 
         {activeNote && (
