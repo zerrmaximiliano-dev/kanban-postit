@@ -41,7 +41,7 @@ import type { Column, Note, ChecklistItem } from '../domain/types';
 
 const offsetOverlayAboveCursor: Modifier = ({ transform }) => ({
   ...transform,
-  y: transform.y - 70,
+  y: transform.y - 25,
 });
 
 function shiftDate(dateStr: string, days: number): string {
@@ -119,8 +119,11 @@ function BoardColumn({
   }
 
   return (
-    <div className="w-64 shrink-0 rounded-lg bg-white p-3 shadow-sm" style={{ borderTop: `3px solid ${accentColor}` }}>
-      <div className="mb-3 flex items-center justify-between pb-1.5">
+    <div
+      className="flex h-full w-64 shrink-0 flex-col rounded-lg bg-white p-3 shadow-sm"
+      style={{ borderTop: `3px solid ${accentColor}` }}
+    >
+      <div className="mb-3 flex shrink-0 items-center justify-between pb-1.5">
         {editing ? (
           <input
             autoFocus
@@ -158,7 +161,7 @@ function BoardColumn({
       <SortableContext items={notes.map((n) => n.id)} strategy={verticalListSortingStrategy}>
         <div
           ref={setDroppableRef}
-          className={`min-h-[3rem] rounded ${isOver ? 'bg-sky-50' : ''}`}
+          className={`min-h-[3rem] flex-1 overflow-y-auto rounded ${isOver ? 'bg-sky-50' : ''}`}
         >
           {notes.map((note) => (
             <SortableNote key={note.id} note={note} onOpen={onOpenNote} onDelete={onDeleteNote} />
@@ -168,7 +171,7 @@ function BoardColumn({
 
       <button
         onClick={() => onAddNote(column.id)}
-        className="mt-1 w-full rounded py-1 text-left text-sm text-gray-400 hover:bg-gray-100"
+        className="mt-1 w-full shrink-0 rounded py-1 text-left text-sm text-gray-400 hover:bg-gray-100"
       >
         + Nueva nota
       </button>
@@ -333,15 +336,15 @@ export function BoardView({ boardId }: { boardId: string }) {
   }
 
   return (
-    <div>
+    <div className="flex h-full flex-col">
       <BoardHeader boardId={boardId} />
       <BoardTabs boardId={boardId} />
-      <div className="min-h-[calc(100vh-3rem)] p-4" style={{ backgroundColor: palette.light }}>
+      <div className="flex flex-1 flex-col overflow-hidden p-4" style={{ backgroundColor: palette.light }}>
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar notas por palabra clave..."
-          className="mb-4 w-full max-w-sm rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm"
+          className="mb-4 w-full max-w-sm shrink-0 rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm"
         />
 
         <DndContext
@@ -350,7 +353,7 @@ export function BoardView({ boardId }: { boardId: string }) {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-3 overflow-x-auto">
+          <div className="flex flex-1 gap-3 overflow-x-auto">
             {columns.map((column) => {
               const columnNotes = notes
                 .filter((n) => n.columnId === column.id)
@@ -389,7 +392,7 @@ export function BoardView({ boardId }: { boardId: string }) {
             )}
           </DragOverlay>
 
-          <MiniCalendarPanel notes={notes} accentColor={palette.medium} />
+          <MiniCalendarPanel notes={notes} accentColor={palette.dark} />
         </DndContext>
 
         {activeNote && (

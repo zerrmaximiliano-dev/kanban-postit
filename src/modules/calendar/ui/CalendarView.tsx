@@ -45,7 +45,7 @@ type ViewMode = 'month' | 'week';
 
 const offsetOverlayAboveCursor: Modifier = ({ transform }) => ({
   ...transform,
-  y: transform.y - 70,
+  y: transform.y - 25,
 });
 
 function shiftDate(dateStr: string, days: number): string {
