@@ -26,7 +26,7 @@ describe('NoteCard', () => {
 
     expect(screen.getByText('Llamar al cliente')).toBeInTheDocument();
     expect(screen.getByText('urgente')).toBeInTheDocument();
-    expect(screen.getByText('1/2')).toBeInTheDocument();
+    expect(screen.getByText('1/2 tareas')).toBeInTheDocument();
   });
 
   it('calls onOpen when double-clicked', () => {
