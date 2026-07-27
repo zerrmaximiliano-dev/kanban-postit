@@ -199,7 +199,7 @@ function BoardColumn({
           <MoreIcon />
         </button>
         {menuOpen && (
-          <div className="absolute right-0 top-7 z-10 w-40 rounded-control border border-border bg-surface py-1 shadow-elevation-md">
+          <div className="absolute right-0 top-7 z-10 w-40 rounded-card border border-border bg-surface py-1 shadow-elevation-md">
             <button
               type="button"
               onClick={() => {
@@ -446,7 +446,7 @@ export function BoardView({ boardId }: { boardId: string }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar notas por palabra clave..."
-          className="mb-4 w-full max-w-sm shrink-0 rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm"
+          className="mb-4 w-full max-w-sm shrink-0 rounded-control border border-border bg-surface px-3 py-1.5 text-sm text-ink shadow-elevation-sm"
         />
 
         <DndContext
@@ -482,7 +482,7 @@ export function BoardView({ boardId }: { boardId: string }) {
                 value={newColumnName}
                 onChange={(e) => setNewColumnName(e.target.value)}
                 placeholder="+ Nueva columna"
-                className="w-full rounded border border-dashed border-gray-400 bg-white/60 px-2 py-1.5 text-sm text-gray-900"
+                className="w-full rounded-control border border-dashed border-border-strong bg-surface/60 px-2 py-1.5 text-sm text-ink"
               />
             </form>
           </div>
