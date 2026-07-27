@@ -1,9 +1,9 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { getMonthRange, getMonthLeadingBlankDays } from '@/src/modules/calendar/domain/bucketing';
-import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MoreIcon } from '@/src/modules/ui/icons';
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, MoreIcon } from '@/src/modules/ui/icons';
 import type { Note } from '../domain/types';
 
 const PANEL_MARGIN = 8;
@@ -46,7 +46,25 @@ export function MiniCalendarPanel({ notes, accentColor }: { notes: Note[]; accen
   const dragRef = useRef<DragState | null>(null);
   const suppressClickRef = useRef(false);
 
-  function handleHeaderPointerDown(e: React.PointerEvent<HTMLButtonElement>) {
+  // When a dragged (custom-positioned) panel opens, it can grow taller/wider
+  // than the space left below/right of where it was dropped. Re-clamp so the
+  // expanded card always stays fully on screen.
+  useEffect(() => {
+    if (!open || !position) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const rect = panel.getBoundingClientRect();
+    const maxTop = Math.max(window.innerHeight - rect.height - PANEL_MARGIN, PANEL_MARGIN);
+    const maxLeft = Math.max(window.innerWidth - rect.width - PANEL_MARGIN, PANEL_MARGIN);
+    const clampedTop = Math.min(position.top, maxTop);
+    const clampedLeft = Math.min(position.left, maxLeft);
+    if (clampedTop !== position.top || clampedLeft !== position.left) {
+      setPosition({ top: clampedTop, left: clampedLeft });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  function handleDragPointerDown(e: React.PointerEvent<HTMLElement>) {
     const panel = panelRef.current;
     if (!panel) return;
     const rect = panel.getBoundingClientRect();
@@ -60,7 +78,7 @@ export function MiniCalendarPanel({ notes, accentColor }: { notes: Note[]; accen
     e.currentTarget.setPointerCapture(e.pointerId);
   }
 
-  function handleHeaderPointerMove(e: React.PointerEvent<HTMLButtonElement>) {
+  function handleDragPointerMove(e: React.PointerEvent<HTMLElement>) {
     const drag = dragRef.current;
     if (!drag) return;
     const dx = e.clientX - drag.startX;
@@ -80,14 +98,14 @@ export function MiniCalendarPanel({ notes, accentColor }: { notes: Note[]; accen
     });
   }
 
-  function handleHeaderPointerUp(e: React.PointerEvent<HTMLButtonElement>) {
+  function handleDragPointerUp(e: React.PointerEvent<HTMLElement>) {
     dragRef.current = null;
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
   }
 
-  function handleHeaderClick() {
+  function handleToggleClick() {
     if (suppressClickRef.current) {
       suppressClickRef.current = false;
       return;
@@ -110,60 +128,83 @@ export function MiniCalendarPanel({ notes, accentColor }: { notes: Note[]; accen
   return (
     <div
       ref={panelRef}
-      className={`fixed z-20 w-72 rounded-card bg-surface shadow-elevation-md ${position ? '' : 'bottom-4 right-[22rem]'}`}
+      className={`fixed z-20 ${position ? '' : 'bottom-4 right-[22rem]'}`}
       style={position ? { top: position.top, left: position.left } : undefined}
     >
-      <button
-        type="button"
-        onClick={handleHeaderClick}
-        onPointerDown={handleHeaderPointerDown}
-        onPointerMove={handleHeaderPointerMove}
-        onPointerUp={handleHeaderPointerUp}
-        className="flex w-full cursor-grab items-center gap-2 rounded-t-card px-3 py-2.5 text-sm font-semibold text-white transition-colors duration-150 ease-standard active:cursor-grabbing"
-        style={{ backgroundColor: accentColor }}
-        title="Arrastrá para mover, click para abrir/cerrar"
-      >
-        <MoreIcon className="h-3.5 w-3.5 rotate-90 text-white/60" />
-        <CalendarIcon className="h-4 w-4" />
-        <span className="flex-1 text-left">Abrí y arrastrá una nota aquí</span>
-        <ChevronRightIcon className={`h-4 w-4 transition-transform duration-200 ease-standard ${open ? 'rotate-90' : ''}`} />
-      </button>
-
-      {open && (
-        <div className="p-3">
-          <div className="mb-2 flex items-center justify-between">
+      {!open ? (
+        <button
+          type="button"
+          onClick={handleToggleClick}
+          onPointerDown={handleDragPointerDown}
+          onPointerMove={handleDragPointerMove}
+          onPointerUp={handleDragPointerUp}
+          className="flex h-12 w-12 cursor-grab items-center justify-center rounded-full text-white shadow-elevation-md transition-transform duration-150 ease-standard hover:scale-105 active:cursor-grabbing"
+          style={{ backgroundColor: accentColor }}
+          aria-label="Abrir calendario para agendar notas"
+          title="Arrastrá para mover, click para abrir"
+        >
+          <CalendarIcon className="h-5 w-5" />
+        </button>
+      ) : (
+        <div className="w-72 overflow-hidden rounded-card bg-surface shadow-elevation-md">
+          <div
+            onPointerDown={handleDragPointerDown}
+            onPointerMove={handleDragPointerMove}
+            onPointerUp={handleDragPointerUp}
+            className="flex cursor-grab items-center gap-2 px-3 py-2.5 text-white transition-colors duration-150 ease-standard active:cursor-grabbing"
+            style={{ backgroundColor: accentColor }}
+            title="Arrastrá para mover"
+          >
+            <MoreIcon className="h-3.5 w-3.5 rotate-90 text-white/60" />
+            <CalendarIcon className="h-4 w-4" />
+            <span className="flex-1 text-sm font-semibold">Calendario</span>
             <button
               type="button"
-              onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
-              className="rounded-control p-1 text-ink-muted transition-colors duration-150 ease-standard hover:bg-page hover:text-ink"
-              aria-label="Mes anterior"
+              onClick={() => setOpen(false)}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="rounded-control p-1 text-white/70 transition-colors duration-150 ease-standard hover:bg-white/20 hover:text-white"
+              aria-label="Cerrar calendario"
             >
-              <ChevronLeftIcon className="h-4 w-4" />
-            </button>
-            <p className="text-xs font-semibold text-ink">
-              {MONTH_LABELS[cursor.getMonth()]} {cursor.getFullYear()}
-            </p>
-            <button
-              type="button"
-              onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
-              className="rounded-control p-1 text-ink-muted transition-colors duration-150 ease-standard hover:bg-page hover:text-ink"
-              aria-label="Mes siguiente"
-            >
-              <ChevronRightIcon className="h-4 w-4" />
+              <CloseIcon className="h-4 w-4" />
             </button>
           </div>
-          <div className="grid grid-cols-7 gap-1">
-            {WEEKDAY_LABELS.map((label) => (
-              <p key={label} className="text-center text-[10px] font-bold uppercase text-ink-faint">
-                {label}
+
+          <div className="p-3">
+            <p className="mb-2 text-xs text-ink-muted">Arrastrá una nota aquí para agendarla</p>
+            <div className="mb-2 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
+                className="rounded-control p-1 text-ink-muted transition-colors duration-150 ease-standard hover:bg-page hover:text-ink"
+                aria-label="Mes anterior"
+              >
+                <ChevronLeftIcon className="h-4 w-4" />
+              </button>
+              <p className="text-xs font-semibold text-ink">
+                {MONTH_LABELS[cursor.getMonth()]} {cursor.getFullYear()}
               </p>
-            ))}
-            {Array.from({ length: leadingBlanks }).map((_, i) => (
-              <div key={`blank-${i}`} />
-            ))}
-            {days.map((date) => (
-              <DayDropCell key={date} date={date} count={countForDay(date)} />
-            ))}
+              <button
+                type="button"
+                onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
+                className="rounded-control p-1 text-ink-muted transition-colors duration-150 ease-standard hover:bg-page hover:text-ink"
+                aria-label="Mes siguiente"
+              >
+                <ChevronRightIcon className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {WEEKDAY_LABELS.map((label) => (
+                <p key={label} className="text-center text-[10px] font-bold uppercase text-ink-faint">
+                  {label}
+                </p>
+              ))}
+              {Array.from({ length: leadingBlanks }).map((_, i) => (
+                <div key={`blank-${i}`} />
+              ))}
+              {days.map((date) => (
+                <DayDropCell key={date} date={date} count={countForDay(date)} />
+              ))}
+            </div>
           </div>
         </div>
       )}
