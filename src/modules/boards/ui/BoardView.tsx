@@ -50,6 +50,30 @@ function shiftDate(dateStr: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
+interface FlyingNoteState {
+  note: Note;
+  origin: { top: number; left: number; width: number; height: number };
+  transform: string;
+  animate: boolean;
+}
+
+function FlyingNoteOverlay({ flight }: { flight: FlyingNoteState }) {
+  return (
+    <div
+      className={`pointer-events-none fixed z-50 ${flight.animate ? 'transition-transform duration-300 ease-in-out' : ''}`}
+      style={{
+        top: flight.origin.top,
+        left: flight.origin.left,
+        width: flight.origin.width,
+        height: flight.origin.height,
+        transform: flight.transform,
+      }}
+    >
+      <NoteCard note={flight.note} onOpen={() => {}} />
+    </div>
+  );
+}
+
 function noteMatchesQuery(note: Note, query: string): boolean {
   const q = query.toLowerCase();
   return (
@@ -200,6 +224,7 @@ export function BoardView({ boardId }: { boardId: string }) {
   const [draggingNote, setDraggingNote] = useState<Note | null>(null);
   const [query, setQuery] = useState('');
   const [justScheduled, setJustScheduled] = useState<{ noteId: string; date: string } | null>(null);
+  const [flyingNote, setFlyingNote] = useState<FlyingNoteState | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -248,12 +273,35 @@ export function BoardView({ boardId }: { boardId: string }) {
       setNotes(notes.map((n) => (n.id === noteId ? { ...n, startDate: newStartDate, endDate: newEndDate } : n)));
       updateNoteDetails(supabase, noteId, { startDate: newStartDate, endDate: newEndDate });
 
-      // Keep the overlay mounted through dnd-kit's default drop animation so the
-      // note visibly flies from the calendar day back to its column position,
-      // then pulse the real card to confirm the schedule change landed.
-      setTimeout(() => setDraggingNote(null), 250);
+      setDraggingNote(null);
+
+      // Drive a custom fly-into-the-calendar-then-back-to-the-column animation:
+      // mount a clone scaled/translated exactly onto the day cell (no transition),
+      // then on the next tick clear that transform so the transition CSS class
+      // animates it visibly traveling back to the note's real column position.
+      const dayRect = over.rect;
+      const originRect = active.rect.current.initial ?? active.rect.current.translated;
+      if (dayRect && originRect && originRect.width > 0 && originRect.height > 0) {
+        const scaleX = dayRect.width / originRect.width;
+        const scaleY = dayRect.height / originRect.height;
+        const translateX = dayRect.left + dayRect.width / 2 - (originRect.left + originRect.width / 2);
+        const translateY = dayRect.top + dayRect.height / 2 - (originRect.top + originRect.height / 2);
+
+        setFlyingNote({
+          note: draggedNote,
+          origin: { top: originRect.top, left: originRect.left, width: originRect.width, height: originRect.height },
+          transform: `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`,
+          animate: false,
+        });
+
+        setTimeout(() => {
+          setFlyingNote((f) => (f ? { ...f, transform: 'translate(0px, 0px) scale(1, 1)', animate: true } : f));
+        }, 20);
+        setTimeout(() => setFlyingNote(null), 420);
+      }
+
       setJustScheduled({ noteId, date: targetDate });
-      setTimeout(() => setJustScheduled(null), 1050);
+      setTimeout(() => setJustScheduled(null), 700);
       return;
     }
 
@@ -417,6 +465,8 @@ export function BoardView({ boardId }: { boardId: string }) {
               </div>
             )}
           </DragOverlay>
+
+          {flyingNote && <FlyingNoteOverlay flight={flyingNote} />}
 
           <MiniCalendarPanel notes={notes} accentColor={palette.dark} flashDate={justScheduled?.date ?? null} />
         </DndContext>
