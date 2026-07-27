@@ -161,7 +161,7 @@ function BoardColumn({
       <SortableContext items={notes.map((n) => n.id)} strategy={verticalListSortingStrategy}>
         <div
           ref={setDroppableRef}
-          className={`min-h-[3rem] flex-1 overflow-x-hidden overflow-y-auto rounded ${isOver ? 'bg-sky-50' : ''}`}
+          className={`min-h-[3rem] flex-1 overflow-x-hidden overflow-y-auto rounded px-1 ${isOver ? 'bg-sky-50' : ''}`}
         >
           {notes.map((note) => (
             <SortableNote key={note.id} note={note} onOpen={onOpenNote} onDelete={onDeleteNote} />
@@ -353,7 +353,7 @@ export function BoardView({ boardId }: { boardId: string }) {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex flex-1 gap-3 overflow-x-hidden">
+          <div className="flex flex-1 gap-3 overflow-x-auto overflow-y-hidden">
             {columns.map((column) => {
               const columnNotes = notes
                 .filter((n) => n.columnId === column.id)

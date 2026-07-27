@@ -8,10 +8,12 @@ const PRIORITY_LABEL: Record<Note['priority'], string> = {
   high: 'Alta',
 };
 
+const TILT_ANGLES = [-3, -1.5, 0, 1.5, 3];
+
 function tiltFor(id: string): number {
   let hash = 0;
   for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
-  return (hash % 5) - 2; // -2deg..2deg
+  return TILT_ANGLES[Math.abs(hash) % TILT_ANGLES.length];
 }
 
 export function NoteCard({

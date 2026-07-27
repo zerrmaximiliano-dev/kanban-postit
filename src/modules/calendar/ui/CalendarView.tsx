@@ -74,6 +74,8 @@ function DraggableNote({ note, onOpen, onUnschedule }: { note: Note; onOpen: (n:
   );
 }
 
+const MAX_VISIBLE_NOTES = 3;
+
 function DayCell({
   bucket,
   onOpenNote,
@@ -84,13 +86,35 @@ function DayCell({
   onUnscheduleNote: (n: Note) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: bucket.date });
+  const [expanded, setExpanded] = useState(false);
+
+  const visibleNotes = expanded ? bucket.notes : bucket.notes.slice(0, MAX_VISIBLE_NOTES);
+  const hiddenCount = bucket.notes.length - visibleNotes.length;
 
   return (
     <div ref={setNodeRef} className={`min-h-24 rounded p-1.5 shadow-sm ${isOver ? 'bg-sky-50' : 'bg-white'}`}>
       <p className="mb-1 text-xs text-gray-400">{bucket.date.slice(8, 10)}</p>
-      {bucket.notes.map((note) => (
+      {visibleNotes.map((note) => (
         <DraggableNote key={note.id} note={note} onOpen={onOpenNote} onUnschedule={onUnscheduleNote} />
       ))}
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="w-full rounded py-0.5 text-left text-[10px] font-medium text-gray-500 hover:bg-gray-100"
+        >
+          +{hiddenCount} más
+        </button>
+      )}
+      {expanded && bucket.notes.length > MAX_VISIBLE_NOTES && (
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          className="w-full rounded py-0.5 text-left text-[10px] font-medium text-gray-500 hover:bg-gray-100"
+        >
+          Ver menos
+        </button>
+      )}
     </div>
   );
 }
