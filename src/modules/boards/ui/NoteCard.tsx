@@ -1,11 +1,18 @@
 'use client';
 
 import type { Note } from '../domain/types';
+import { TrashIcon } from '@/src/modules/ui/icons';
 
 const PRIORITY_LABEL: Record<Note['priority'], string> = {
   low: 'Baja',
   medium: 'Media',
   high: 'Alta',
+};
+
+const PRIORITY_DOT: Record<Note['priority'], string> = {
+  low: 'bg-ink-faint',
+  medium: 'bg-warning',
+  high: 'bg-danger',
 };
 
 const TILT_ANGLES = [-3, -1.5, 0, 1.5, 3];
@@ -28,12 +35,13 @@ export function NoteCard({
   deleteLabel?: string;
 }) {
   const doneCount = note.checklist.filter((c) => c.done).length;
+  const progress = note.checklist.length > 0 ? (doneCount / note.checklist.length) * 100 : 0;
 
   return (
     <div
       onDoubleClick={() => onOpen(note)}
       style={{ backgroundColor: note.color, transform: `rotate(${tiltFor(note.id)}deg)` }}
-      className="group relative mb-3 cursor-pointer rounded-[2px] p-3 text-sm shadow-[2px_3px_6px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 hover:shadow-[3px_5px_10px_rgba(0,0,0,0.3)]"
+      className="group relative mb-3 cursor-pointer rounded-[2px] p-3 text-sm shadow-elevation-sm transition-[transform,box-shadow] duration-150 ease-standard hover:-translate-y-0.5 hover:shadow-elevation-md"
     >
       {onDelete && (
         <button
@@ -42,11 +50,11 @@ export function NoteCard({
             e.stopPropagation();
             onDelete(note);
           }}
-          className="absolute right-1 top-1 hidden h-5 w-5 items-center justify-center rounded-full bg-black/10 text-xs leading-none text-gray-800 hover:bg-black/20 group-hover:flex"
+          className="absolute right-1 top-1 hidden h-6 w-6 items-center justify-center rounded-full bg-black/10 text-ink transition-colors duration-150 ease-standard hover:bg-black/20 group-hover:flex"
           aria-label={deleteLabel}
           title={deleteLabel}
         >
-          ×
+          <TrashIcon className="h-3.5 w-3.5" />
         </button>
       )}
 
@@ -55,21 +63,31 @@ export function NoteCard({
       {note.tags.length > 0 && (
         <div className="mt-1 flex flex-wrap gap-1">
           {note.tags.map((tag) => (
-            <span key={tag} className="rounded bg-black/10 px-1.5 py-0.5 text-xs">
+            <span key={tag} className="rounded-full bg-black/10 px-1.5 py-0.5 text-xs">
               {tag}
             </span>
           ))}
         </div>
       )}
 
-      <div className="mt-2 flex items-center justify-between text-xs text-gray-700">
+      <div className="mt-2 flex items-center gap-1.5 text-xs text-gray-700">
+        <span className={`h-1.5 w-1.5 rounded-full ${PRIORITY_DOT[note.priority]}`} />
         <span>{PRIORITY_LABEL[note.priority]}</span>
-        {note.checklist.length > 0 && (
-          <span>
-            {doneCount}/{note.checklist.length}
-          </span>
-        )}
       </div>
+
+      {note.checklist.length > 0 && (
+        <div className="mt-2">
+          <div className="h-1 w-full overflow-hidden rounded-full bg-black/10">
+            <div
+              className="h-full rounded-full bg-black/40 transition-[width] duration-200 ease-standard"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="mt-1 text-xs text-gray-700">
+            {doneCount}/{note.checklist.length} tareas
+          </p>
+        </div>
+      )}
 
       {note.startDate && (
         <p className="mt-1 text-xs text-gray-600">
