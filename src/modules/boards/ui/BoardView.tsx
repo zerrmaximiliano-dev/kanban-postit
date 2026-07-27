@@ -51,6 +51,26 @@ function shiftDate(dateStr: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
+interface CalendarArrival {
+  note: Note;
+  top: number;
+  left: number;
+  opacity: number;
+}
+
+const ARRIVAL_SIZE = 56;
+
+function CalendarArrivalOverlay({ arrival }: { arrival: CalendarArrival }) {
+  return (
+    <div
+      className="pointer-events-none fixed z-50 origin-center scale-[0.3] transition-all duration-300 ease-out"
+      style={{ top: arrival.top, left: arrival.left, width: ARRIVAL_SIZE, height: ARRIVAL_SIZE, opacity: arrival.opacity }}
+    >
+      <NoteCard note={arrival.note} onOpen={() => {}} />
+    </div>
+  );
+}
+
 function noteMatchesQuery(note: Note, query: string): boolean {
   const q = query.toLowerCase();
   return (
@@ -78,7 +98,7 @@ function SortableNote({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
-      className="transition-opacity duration-300"
+      className="transition-opacity duration-500 ease-out"
       {...attributes}
       {...listeners}
     >
@@ -192,6 +212,7 @@ export function BoardView({ boardId }: { boardId: string }) {
   const [draggingNote, setDraggingNote] = useState<Note | null>(null);
   const [query, setQuery] = useState('');
   const [overCalendarDay, setOverCalendarDay] = useState(false);
+  const [arrival, setArrival] = useState<CalendarArrival | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -239,6 +260,32 @@ export function BoardView({ boardId }: { boardId: string }) {
 
       setNotes(notes.map((n) => (n.id === noteId ? { ...n, startDate: newStartDate, endDate: newEndDate } : n)));
       updateNoteDetails(supabase, noteId, { startDate: newStartDate, endDate: newEndDate });
+
+      // Fly a small clone the rest of the way into the day cell and fade it
+      // there — the overlay never travels back to the column.
+      const dayRect = over.rect;
+      const startRect = active.rect.current.translated ?? active.rect.current.initial;
+      if (dayRect && startRect) {
+        const startCenterX = startRect.left + startRect.width / 2;
+        const startCenterY = startRect.top + startRect.height / 2;
+        setArrival({
+          note: draggedNote,
+          top: startCenterY - ARRIVAL_SIZE / 2,
+          left: startCenterX - ARRIVAL_SIZE / 2,
+          opacity: 1,
+        });
+
+        const dayCenterX = dayRect.left + dayRect.width / 2;
+        const dayCenterY = dayRect.top + dayRect.height / 2;
+        setTimeout(() => {
+          setArrival((a) =>
+            a ? { ...a, top: dayCenterY - ARRIVAL_SIZE / 2, left: dayCenterX - ARRIVAL_SIZE / 2 } : a
+          );
+        }, 20);
+        setTimeout(() => setArrival((a) => (a ? { ...a, opacity: 0 } : a)), 230);
+        setTimeout(() => setArrival(null), 400);
+      }
+
       return;
     }
 
@@ -404,6 +451,8 @@ export function BoardView({ boardId }: { boardId: string }) {
               </div>
             )}
           </DragOverlay>
+
+          {arrival && <CalendarArrivalOverlay arrival={arrival} />}
 
           <MiniCalendarPanel notes={notes} accentColor={palette.dark} />
         </DndContext>
