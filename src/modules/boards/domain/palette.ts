@@ -9,7 +9,7 @@ export interface BoardPalette {
   light: string;
 }
 
-const DEFAULT_BASE = '#5B6B8C';
+const DEFAULT_BASE = '#1B4B5A';
 
 function hexToHsl(hex: string): { h: number; s: number; l: number } {
   const normalized = hex.replace('#', '');
