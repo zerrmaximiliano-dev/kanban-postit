@@ -7,6 +7,7 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
+  Modifier,
   PointerSensor,
   useDraggable,
   useDroppable,
@@ -42,13 +43,18 @@ import type { ChecklistItem, Note } from '@/src/modules/boards/domain/types';
 
 type ViewMode = 'month' | 'week';
 
+const offsetOverlayAboveCursor: Modifier = ({ transform }) => ({
+  ...transform,
+  y: transform.y - 70,
+});
+
 function shiftDate(dateStr: string, days: number): string {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(Date.UTC(y, m - 1, d + days));
   return date.toISOString().slice(0, 10);
 }
 
-function DraggableNote({ note, onOpen, onDelete }: { note: Note; onOpen: (n: Note) => void; onDelete: (n: Note) => void }) {
+function DraggableNote({ note, onOpen, onUnschedule }: { note: Note; onOpen: (n: Note) => void; onUnschedule: (n: Note) => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: note.id });
 
   return (
@@ -59,7 +65,7 @@ function DraggableNote({ note, onOpen, onDelete }: { note: Note; onOpen: (n: Not
       {...attributes}
       {...listeners}
     >
-      <NoteCard note={note} onOpen={onOpen} onDelete={onDelete} />
+      <NoteCard note={note} onOpen={onOpen} onDelete={onUnschedule} deleteLabel="Quitar del calendario" />
     </div>
   );
 }
@@ -67,11 +73,11 @@ function DraggableNote({ note, onOpen, onDelete }: { note: Note; onOpen: (n: Not
 function DayCell({
   bucket,
   onOpenNote,
-  onDeleteNote,
+  onUnscheduleNote,
 }: {
   bucket: DayBucket;
   onOpenNote: (n: Note) => void;
-  onDeleteNote: (n: Note) => void;
+  onUnscheduleNote: (n: Note) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: bucket.date });
 
@@ -79,7 +85,7 @@ function DayCell({
     <div ref={setNodeRef} className={`min-h-24 rounded p-1.5 shadow-sm ${isOver ? 'bg-sky-50' : 'bg-white'}`}>
       <p className="mb-1 text-xs text-gray-400">{bucket.date.slice(8, 10)}</p>
       {bucket.notes.map((note) => (
-        <DraggableNote key={note.id} note={note} onOpen={onOpenNote} onDelete={onDeleteNote} />
+        <DraggableNote key={note.id} note={note} onOpen={onOpenNote} onUnschedule={onUnscheduleNote} />
       ))}
     </div>
   );
@@ -123,6 +129,11 @@ export function CalendarView({ boardId }: { boardId: string }) {
   async function handleDeleteNote(note: Note) {
     setNotes(notes.filter((n) => n.id !== note.id));
     await deleteNote(supabase, note.id);
+  }
+
+  async function handleUnscheduleNote(note: Note) {
+    setNotes(notes.map((n) => (n.id === note.id ? { ...n, startDate: null, endDate: null } : n)));
+    await updateNoteDetails(supabase, note.id, { startDate: null, endDate: null });
   }
 
   function handleDragStart(event: DragStartEvent) {
@@ -233,14 +244,14 @@ export function CalendarView({ boardId }: { boardId: string }) {
                 key={bucket.date}
                 bucket={bucket}
                 onOpenNote={setActiveNote}
-                onDeleteNote={handleDeleteNote}
+                onUnscheduleNote={handleUnscheduleNote}
               />
             ))}
           </div>
 
-          <DragOverlay>
+          <DragOverlay modifiers={[offsetOverlayAboveCursor]}>
             {draggingNote && (
-              <div className="w-48">
+              <div className="w-40 scale-90 opacity-90">
                 <NoteCard note={draggingNote} onOpen={() => {}} />
               </div>
             )}

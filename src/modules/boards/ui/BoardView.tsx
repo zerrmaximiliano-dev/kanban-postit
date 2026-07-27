@@ -7,6 +7,7 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
+  Modifier,
   PointerSensor,
   useDroppable,
   useSensor,
@@ -37,6 +38,11 @@ import { MiniCalendarPanel } from './MiniCalendarPanel';
 import { useBoardTheme } from './BoardThemeContext';
 import { getBoardPalette } from '../domain/palette';
 import type { Column, Note, ChecklistItem } from '../domain/types';
+
+const offsetOverlayAboveCursor: Modifier = ({ transform }) => ({
+  ...transform,
+  y: transform.y - 70,
+});
 
 function shiftDate(dateStr: string, days: number): string {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -375,9 +381,9 @@ export function BoardView({ boardId }: { boardId: string }) {
             </form>
           </div>
 
-          <DragOverlay>
+          <DragOverlay modifiers={[offsetOverlayAboveCursor]}>
             {draggingNote && (
-              <div className="w-64">
+              <div className="w-48 scale-90 opacity-90">
                 <NoteCard note={draggingNote} onOpen={() => {}} />
               </div>
             )}

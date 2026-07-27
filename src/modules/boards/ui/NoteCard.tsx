@@ -18,10 +18,12 @@ export function NoteCard({
   note,
   onOpen,
   onDelete,
+  deleteLabel = 'Eliminar nota',
 }: {
   note: Note;
   onOpen: (note: Note) => void;
   onDelete?: (note: Note) => void;
+  deleteLabel?: string;
 }) {
   const doneCount = note.checklist.filter((c) => c.done).length;
 
@@ -39,7 +41,8 @@ export function NoteCard({
             onDelete(note);
           }}
           className="absolute right-1 top-1 hidden h-5 w-5 items-center justify-center rounded-full bg-black/10 text-xs leading-none text-gray-800 hover:bg-black/20 group-hover:flex"
-          aria-label="Eliminar nota"
+          aria-label={deleteLabel}
+          title={deleteLabel}
         >
           ×
         </button>

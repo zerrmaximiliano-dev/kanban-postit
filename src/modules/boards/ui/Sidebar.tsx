@@ -87,7 +87,7 @@ export function Sidebar() {
         <button
           type="submit"
           disabled={createBoard.isPending}
-          className="rounded bg-purple-600 px-2 py-1.5 text-sm disabled:opacity-50"
+          className="rounded bg-black px-2 py-1.5 text-sm text-white hover:bg-gray-800 disabled:opacity-50"
         >
           {createBoard.isPending ? 'Creando...' : '+ Crear tablero'}
         </button>
