@@ -13,10 +13,19 @@ import type { BoardMember, BoardMemberRole } from '../domain/types';
 // found by listing and filtering. This is O(n) in total user count, which
 // is an accepted simplification for this app's expected scale (small
 // teams sharing a handful of boards) — revisit if user count grows large.
+// listUsers() is paginated (default page size 50), so we page through all
+// results — otherwise a user past page 1 would be missed and re-invited.
 async function findUserByEmail(admin: ReturnType<typeof createAdminClient>, email: string): Promise<User | null> {
-  const { data, error } = await admin.auth.admin.listUsers();
-  if (error) throw new Error(error.message);
-  return data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase()) ?? null;
+  const perPage = 1000;
+  let page = 1;
+  while (true) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+    if (error) throw new Error(error.message);
+    const match = data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+    if (match) return match;
+    if (data.users.length < perPage) return null;
+    page += 1;
+  }
 }
 
 export async function listBoardMembers(boardId: string): Promise<BoardMember[]> {
