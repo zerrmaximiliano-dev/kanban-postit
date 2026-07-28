@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   closestCenter,
   DndContext,
@@ -15,9 +15,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { createClient } from '@/src/modules/identity/data/supabaseClient';
-import { getBoardColumns } from '@/src/modules/boards/application/boardService';
 import {
-  loadBoardNotes,
   updateNoteDetails,
   deleteNote,
   addChecklistItem,
@@ -41,6 +39,7 @@ import { NoteEditor } from '@/src/modules/boards/ui/NoteEditor';
 import { BoardTabs } from '@/src/modules/boards/ui/BoardTabs';
 import { BoardHeader } from '@/src/modules/boards/ui/BoardHeader';
 import { useBoardTheme } from '@/src/modules/boards/ui/BoardThemeContext';
+import { useBoardRealtime } from '@/src/modules/boards/ui/useBoardRealtime';
 import { getBoardPalette } from '@/src/modules/boards/domain/palette';
 import { ChevronLeftIcon, ChevronRightIcon, CloseIcon } from '@/src/modules/ui/icons';
 import type { ChecklistItem, Note } from '@/src/modules/boards/domain/types';
@@ -146,22 +145,13 @@ export function CalendarView({ boardId }: { boardId: string }) {
   const supabase = createClient();
   const { boardColor } = useBoardTheme();
   const palette = getBoardPalette(boardColor);
-  const [notes, setNotes] = useState<Note[]>([]);
+  const { notes, setNotes } = useBoardRealtime(boardId);
   const [mode, setMode] = useState<ViewMode>('month');
   const [cursor, setCursor] = useState(new Date());
   const [activeNote, setActiveNote] = useState<Note | null>(null);
   const [draggingNote, setDraggingNote] = useState<Note | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
-
-  useEffect(() => {
-    async function load() {
-      const cols = await getBoardColumns(supabase, boardId);
-      const loadedNotes = await loadBoardNotes(supabase, cols.map((c) => c.id));
-      setNotes(loadedNotes);
-    }
-    load();
-  }, [boardId]);
 
   const range =
     mode === 'month'
