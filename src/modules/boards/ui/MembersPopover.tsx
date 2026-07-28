@@ -56,13 +56,25 @@ export function MembersPopover({
 
   async function handleRoleChange(userId: string, role: BoardMemberRole) {
     if (role === 'owner') return;
+    const previous = members;
     setMembers((prev) => prev.map((m) => (m.userId === userId ? { ...m, role } : m)));
-    await updateMemberRole(boardId, userId, role);
+    try {
+      await updateMemberRole(boardId, userId, role);
+    } catch (err) {
+      setMembers(previous);
+      showToast(err instanceof Error ? err.message : 'No se pudo cambiar el rol', 'danger');
+    }
   }
 
   async function handleRemove(userId: string) {
+    const previous = members;
     setMembers((prev) => prev.filter((m) => m.userId !== userId));
-    await removeMember(boardId, userId);
+    try {
+      await removeMember(boardId, userId);
+    } catch (err) {
+      setMembers(previous);
+      showToast(err instanceof Error ? err.message : 'No se pudo quitar al miembro', 'danger');
+    }
   }
 
   function copyShareLink() {
