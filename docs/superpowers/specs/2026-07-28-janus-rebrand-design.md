@@ -18,20 +18,34 @@ Incluye:
 No incluye (fuera de alcance):
 - Cambios a la paleta de colores (petrol/turquesa se mantiene sin tocar).
 - Cambios al nombre del repositorio de GitHub ni al proyecto de Vercel/Supabase.
-- Un rediseño del wordmark tipográfico del logo original — el texto "Janus" en la UI usa la tipografía Inter ya establecida en el sistema de diseño, no la fuente del logo, para mantener consistencia visual con el resto de la app.
+- Loop de flotado/brillo (`idleFloat`/`sheenEffect`) en el uso dentro del login — solo la animación de entrada. El componente los soporta (por si se reusa en un splash a pantalla completa más adelante), pero el call site de login los pasa en `false`.
 
-## Assets
+## Addendum (2026-07-28): asset final + animación de entrada
 
-- `public/janus-icon-512.png`: recorte cuadrado del cubo (512×512, fondo blanco, ~8% de padding), generado con Pillow a partir del JPEG original del usuario.
-- `app/favicon.ico`: generado desde el mismo recorte (multi-resolución: 16/24/32px).
+El usuario compartió un handoff de diseño (`design_handoff_janus_logo/`) con el ícono final ya recortado con fondo transparente (mejor que el recorte hecho a mano en la v1 de este spec) y una especificación de animación de entrada de alta fidelidad. Esto reemplaza/extiende lo de arriba:
 
-## Cambios de código
+### Asset actualizado
 
-- `app/layout.tsx`: `metadata.title` pasa de lo que sea que tenga hoy a `"Janus"` (y `description` si menciona "kanban-postit" explícitamente, se ajusta a texto genérico sobre Janus).
+- `public/janus-icon.png`: ícono final del handoff (684×379, RGBA transparente) — reemplaza `public/janus-icon-512.png`, que se elimina.
+- `app/favicon.ico`: regenerado desde ese mismo asset (padding ~10%, fondo blanco, cuadrado, 512×512 antes de convertir a `.ico` multi-resolución).
+
+### Nuevo componente: `JanusLogoReveal`
+
+Recreación fiel (no una librería de animación nueva — CSS transitions + `useState`/`useEffect`, igual que el resto del proyecto) del HTML de referencia:
+
+- **Entrada**: ícono arranca en `opacity:0, scale(0.7) rotate(-10deg)`; a los 120ms pasa a `opacity:1, scale(1) rotate(0)` (`transition: opacity 1000ms, transform 1200ms`, easing `cubic-bezier(0.16,1,0.3,1)`). El wordmark "JANUS" arranca en `opacity:0, translateY(18px)` por letra; a los `120 + entranceSpeed*0.55`ms (con `entranceSpeed` default 900ms) cada letra pasa a `opacity:1, translateY(0)` con `transition: 620ms/700ms` mismo easing, **stagger de 60ms por letra** (izquierda a derecha).
+- **Loop idle** (float vertical + sheen diagonal): implementado vía `@keyframes` en `globals.css`, activado solo si `idleFloat`/`sheenEffect` son `true` (default `true` en el componente, para poder reusarlo en un futuro splash a pantalla completa) — el login los pasa en `false` para no competir con el formulario.
+- **Props**: `wordmark` (default `"JANUS"`), `iconSize` (px, default 380), `entranceSpeed` (ms, default 900), `idleFloat` (bool, default true), `sheenEffect` (bool, default true).
+- **Tipografía del wordmark**: Archivo (Google Font, peso 800), `76px` a tamaño default, escalando proporcionalmente si `iconSize` es menor (el login la usa a una fracción del tamaño del hero, ver Cambios de código). Color `oklch(0.28 0.06 265)` (navy oscuro). Fondo del propio componente: transparente (hereda el fondo de donde se monte), no fuerza el `oklch(0.995 0.002 250)` del mockup aislado ya que en el login va sobre `bg-surface` existente.
+
+### Cambios de código (reemplaza la sección homónima de arriba)
+
+- `app/layout.tsx`: `metadata.title` → `"Janus"`, `description` → `"Janus — tableros Kanban y calendario colaborativo"`. Se agrega la fuente `Archivo` (Google Font, `next/font/google`, weight 800) como variable CSS, igual patrón que `Inter`/`Caveat` ya existentes.
 - `package.json`: campo `name` → `"janus"`.
-- `src/modules/boards/ui/Sidebar.tsx`: el `<div className="h-6 w-6 rounded-control bg-accent-500" />` (el cuadradito de color, aparece dos veces — colapsado y expandido) se reemplaza por `<img src="/janus-icon-512.png" alt="Janus" className="h-6 w-6 rounded-control object-cover" />`; en la versión expandida, el texto "Tableros" (uppercase, label de sección) se mantiene tal cual — es un label de sección, no el nombre de la app — y se agrega el wordmark "Janus" en `font-semibold text-white` junto al isotipo, arriba de ese label, para que el nombre de marca sea visible.
-- `app/(auth)/login/page.tsx`: el `<div className="mb-3 h-8 w-8 rounded-control bg-accent-500" />` se reemplaza por `<img src="/janus-icon-512.png" alt="Janus" className="mb-3 h-8 w-8 rounded-control object-cover" />`.
+- `src/modules/ui/JanusLogoReveal.tsx` (nuevo): el componente descrito arriba.
+- `src/modules/boards/ui/Sidebar.tsx`: el cuadradito de color (aparece dos veces) se reemplaza por `<img src="/janus-icon.png" alt="Janus" className="h-6 w-6 object-contain" />` (estático, sin animación — la animación de entrada es solo para el login, per decisión del usuario). En la versión expandida se agrega el wordmark "Janus" en Inter (no Archivo, para no mezclar dos fuentes de marca en un lugar tan chico) junto al ícono, arriba del label "Tableros".
+- `app/(auth)/login/page.tsx`: el cuadradito de color se reemplaza por `<JanusLogoReveal iconSize={72} entranceSpeed={900} idleFloat={false} sheenEffect={false} />`.
 
 ## Testing
 
-Sin lógica nueva que testear con Vitest — es un cambio puramente visual/de metadata. Verificación: `npx tsc --noEmit` limpio, revisión visual manual de sidebar/login/favicon en el navegador de preview.
+Sin lógica de negocio nueva que testear con Vitest — es un cambio puramente visual/de metadata más un componente de animación autocontenido sin estado de aplicación. Verificación: `npx tsc --noEmit` limpio, revisión visual manual de sidebar/login/favicon en el navegador de preview (confirmar que la animación de entrada se ve fluida y que no queda flotando/brillando en el login).
