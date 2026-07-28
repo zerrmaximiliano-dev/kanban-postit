@@ -168,7 +168,7 @@ export function MembersPopover({
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="relative flex h-9 w-9 items-center justify-center rounded-control border border-white/25 bg-white/10 text-white transition-colors duration-150 ease-standard hover:bg-white/20"
-        aria-label="Miembros del tablero"
+        aria-label={pendingCount > 0 ? `Miembros del tablero — ${pendingCount} solicitud pendiente` : 'Miembros del tablero'}
         title="Miembros del tablero"
       >
         <UsersIcon />
