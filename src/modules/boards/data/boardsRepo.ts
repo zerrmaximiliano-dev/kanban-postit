@@ -10,6 +10,7 @@ function toBoard(row: unknown): Board {
     ownerId: parsed.owner_id,
     orgId: parsed.org_id,
     color: parsed.color,
+    shareToken: parsed.share_token,
   };
 }
 

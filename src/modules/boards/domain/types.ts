@@ -7,6 +7,18 @@ export interface Board {
   ownerId: string;
   orgId: string | null;
   color: string | null;
+  shareToken: string;
+}
+
+export type BoardMemberRole = 'owner' | 'editor' | 'viewer';
+export type BoardMemberStatus = 'pending' | 'accepted';
+
+export interface BoardMember {
+  boardId: string;
+  userId: string;
+  invitedEmail: string | null;
+  role: BoardMemberRole;
+  status: BoardMemberStatus;
 }
 
 export interface Column {

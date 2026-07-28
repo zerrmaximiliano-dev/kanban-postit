@@ -6,6 +6,15 @@ export const boardRowSchema = z.object({
   owner_id: z.string().uuid(),
   org_id: z.string().uuid().nullable(),
   color: z.string().nullable(),
+  share_token: z.string().uuid(),
+});
+
+export const boardMemberRowSchema = z.object({
+  board_id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  invited_email: z.string().nullable(),
+  role: z.enum(['owner', 'editor', 'viewer']),
+  status: z.enum(['pending', 'accepted']),
 });
 
 export const columnRowSchema = z.object({
