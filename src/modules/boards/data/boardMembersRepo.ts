@@ -75,6 +75,21 @@ export async function removeMember(client: SupabaseClient, boardId: string, user
   if (error) throw error;
 }
 
+export async function getMyRole(client: SupabaseClient, boardId: string): Promise<BoardMemberRole | null> {
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+  if (!user) return null;
+  const { data, error } = await client
+    .from('board_members')
+    .select('role')
+    .eq('board_id', boardId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.role ?? null;
+}
+
 export async function joinViaShareLink(client: SupabaseClient, token: string): Promise<string> {
   const { data, error } = await client.rpc('join_board_via_token', { token });
   if (error) throw error;

@@ -40,6 +40,7 @@ import { BoardTabs } from '@/src/modules/boards/ui/BoardTabs';
 import { BoardHeader } from '@/src/modules/boards/ui/BoardHeader';
 import { useBoardTheme } from '@/src/modules/boards/ui/BoardThemeContext';
 import { useBoardRealtime } from '@/src/modules/boards/ui/useBoardRealtime';
+import { useBoardRole } from '@/src/modules/boards/ui/useBoardRole';
 import { getBoardPalette } from '@/src/modules/boards/domain/palette';
 import { ChevronLeftIcon, ChevronRightIcon, CloseIcon } from '@/src/modules/ui/icons';
 import type { ChecklistItem, Note } from '@/src/modules/boards/domain/types';
@@ -57,34 +58,48 @@ function shiftDate(dateStr: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-function DraggableNote({ note, onOpen, onUnschedule }: { note: Note; onOpen: (n: Note) => void; onUnschedule: (n: Note) => void }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: note.id });
+function DraggableNote({
+  note,
+  onOpen,
+  onUnschedule,
+  canEdit,
+}: {
+  note: Note;
+  onOpen: (n: Note) => void;
+  onUnschedule: (n: Note) => void;
+  canEdit: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: note.id, disabled: !canEdit });
 
   return (
     <div
       ref={setNodeRef}
       onDoubleClick={() => onOpen(note)}
       style={{ backgroundColor: note.color, opacity: isDragging ? 0.4 : 1 }}
-      className="group/pill relative mb-1 flex cursor-grab items-center gap-1 rounded-full py-1 pl-2.5 pr-1 text-xs font-medium text-ink transition-transform duration-150 ease-standard hover:-translate-y-px active:cursor-grabbing"
+      className={`group/pill relative mb-1 flex items-center gap-1 rounded-full py-1 pl-2.5 pr-1 text-xs font-medium text-ink transition-transform duration-150 ease-standard hover:-translate-y-px ${
+        canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+      }`}
       {...attributes}
       {...listeners}
     >
       <span className="font-note min-w-0 flex-1 truncate text-sm font-bold" title={note.title}>
         {note.title}
       </span>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onUnschedule(note);
-        }}
-        onPointerDown={(e) => e.stopPropagation()}
-        className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-ink/50 opacity-0 transition-opacity duration-150 ease-standard hover:bg-black/10 hover:text-ink group-hover/pill:opacity-100"
-        aria-label="Quitar del calendario"
-        title="Quitar del calendario"
-      >
-        <CloseIcon className="h-2.5 w-2.5" />
-      </button>
+      {canEdit && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onUnschedule(note);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-ink/50 opacity-0 transition-opacity duration-150 ease-standard hover:bg-black/10 hover:text-ink group-hover/pill:opacity-100"
+          aria-label="Quitar del calendario"
+          title="Quitar del calendario"
+        >
+          <CloseIcon className="h-2.5 w-2.5" />
+        </button>
+      )}
     </div>
   );
 }
@@ -95,10 +110,12 @@ function DayCell({
   bucket,
   onOpenNote,
   onUnscheduleNote,
+  canEdit,
 }: {
   bucket: DayBucket;
   onOpenNote: (n: Note) => void;
   onUnscheduleNote: (n: Note) => void;
+  canEdit: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: bucket.date });
   const [expanded, setExpanded] = useState(false);
@@ -116,7 +133,7 @@ function DayCell({
       <p className="mb-1 text-xs text-ink-faint">{bucket.date.slice(8, 10)}</p>
       <div className="max-h-40 overflow-y-auto">
         {visibleNotes.map((note) => (
-          <DraggableNote key={note.id} note={note} onOpen={onOpenNote} onUnschedule={onUnscheduleNote} />
+          <DraggableNote key={note.id} note={note} onOpen={onOpenNote} onUnschedule={onUnscheduleNote} canEdit={canEdit} />
         ))}
       </div>
       {hiddenCount > 0 && (
@@ -146,6 +163,7 @@ export function CalendarView({ boardId }: { boardId: string }) {
   const { boardColor } = useBoardTheme();
   const palette = getBoardPalette(boardColor);
   const { notes, setNotes } = useBoardRealtime(boardId);
+  const { canEdit } = useBoardRole(boardId);
   const [mode, setMode] = useState<ViewMode>('month');
   const [cursor, setCursor] = useState(new Date());
   const [activeNote, setActiveNote] = useState<Note | null>(null);
@@ -348,6 +366,7 @@ export function CalendarView({ boardId }: { boardId: string }) {
                   bucket={bucket}
                   onOpenNote={setActiveNote}
                   onUnscheduleNote={handleUnscheduleNote}
+                  canEdit={canEdit}
                 />
               ))}
             </div>

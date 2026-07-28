@@ -36,6 +36,7 @@ import { BoardTabs } from './BoardTabs';
 import { BoardHeader } from './BoardHeader';
 import { MiniCalendarPanel } from './MiniCalendarPanel';
 import { useBoardRealtime } from './useBoardRealtime';
+import { useBoardRole } from './useBoardRole';
 import { useBoardTheme } from './BoardThemeContext';
 import { getBoardPalette } from '../domain/palette';
 import { Badge } from '@/src/modules/ui/Badge';
@@ -87,14 +88,17 @@ function SortableNote({
   note,
   onOpen,
   onDelete,
+  disabled,
 }: {
   note: Note;
   onOpen: (n: Note) => void;
-  onDelete: (n: Note) => void;
+  onDelete?: (n: Note) => void;
+  disabled?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: note.id,
     data: { columnId: note.columnId },
+    disabled,
   });
 
   const revealMask = 'radial-gradient(circle at center, transparent var(--reveal), black var(--reveal))';
@@ -132,6 +136,7 @@ function BoardColumn({
   onDeleteNote,
   onRename,
   onDeleteColumn,
+  canEdit,
 }: {
   column: Column;
   notes: Note[];
@@ -141,6 +146,7 @@ function BoardColumn({
   onDeleteNote: (n: Note) => void;
   onRename: (columnId: string, name: string) => void;
   onDeleteColumn: (column: Column) => void;
+  canEdit: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(column.name);
@@ -183,49 +189,51 @@ function BoardColumn({
         ) : (
           <div className="flex items-center gap-2">
             <h3
-              onClick={() => setEditing(true)}
-              className="cursor-text text-xs font-bold uppercase tracking-wide text-ink-muted"
-              title="Click para renombrar"
+              onClick={canEdit ? () => setEditing(true) : undefined}
+              className={`text-xs font-bold uppercase tracking-wide text-ink-muted ${canEdit ? 'cursor-text' : ''}`}
+              title={canEdit ? 'Click para renombrar' : undefined}
             >
               {column.name}
             </h3>
             <Badge>{notes.length}</Badge>
           </div>
         )}
-        <div ref={menuRef} className="relative">
-          <button
-            type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-            className="rounded-control p-1 text-ink-faint transition-colors duration-150 ease-standard hover:bg-black/5 hover:text-ink"
-            aria-label={`Opciones de la columna ${column.name}`}
-          >
-            <MoreIcon />
-          </button>
-          {menuOpen && (
-            <div className="absolute right-0 top-7 z-10 w-40 rounded-card border border-border bg-surface py-1 shadow-elevation-md">
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  setEditing(true);
-                }}
-                className="block w-full px-3 py-1.5 text-left text-sm text-ink hover:bg-page"
-              >
-                Renombrar
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onDeleteColumn(column);
-                }}
-                className="block w-full px-3 py-1.5 text-left text-sm text-danger hover:bg-danger-bg"
-              >
-                Eliminar columna
-              </button>
-            </div>
-          )}
-        </div>
+        {canEdit && (
+          <div ref={menuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((open) => !open)}
+              className="rounded-control p-1 text-ink-faint transition-colors duration-150 ease-standard hover:bg-black/5 hover:text-ink"
+              aria-label={`Opciones de la columna ${column.name}`}
+            >
+              <MoreIcon />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-7 z-10 w-40 rounded-card border border-border bg-surface py-1 shadow-elevation-md">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setEditing(true);
+                  }}
+                  className="block w-full px-3 py-1.5 text-left text-sm text-ink hover:bg-page"
+                >
+                  Renombrar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onDeleteColumn(column);
+                  }}
+                  className="block w-full px-3 py-1.5 text-left text-sm text-danger hover:bg-danger-bg"
+                >
+                  Eliminar columna
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <SortableContext items={notes.map((n) => n.id)} strategy={verticalListSortingStrategy}>
@@ -236,18 +244,26 @@ function BoardColumn({
           }`}
         >
           {notes.map((note) => (
-            <SortableNote key={note.id} note={note} onOpen={onOpenNote} onDelete={onDeleteNote} />
+            <SortableNote
+              key={note.id}
+              note={note}
+              onOpen={onOpenNote}
+              onDelete={canEdit ? onDeleteNote : undefined}
+              disabled={!canEdit}
+            />
           ))}
         </div>
       </SortableContext>
 
-      <button
-        onClick={() => onAddNote(column.id)}
-        className="mt-1 flex w-full shrink-0 items-center gap-1.5 rounded-control py-1.5 text-left text-sm text-ink-faint transition-colors duration-150 ease-standard hover:bg-page hover:text-ink-muted"
-      >
-        <PlusIcon className="h-3.5 w-3.5" />
-        Nueva nota
-      </button>
+      {canEdit && (
+        <button
+          onClick={() => onAddNote(column.id)}
+          className="mt-1 flex w-full shrink-0 items-center gap-1.5 rounded-control py-1.5 text-left text-sm text-ink-faint transition-colors duration-150 ease-standard hover:bg-page hover:text-ink-muted"
+        >
+          <PlusIcon className="h-3.5 w-3.5" />
+          Nueva nota
+        </button>
+      )}
     </div>
   );
 }
@@ -257,6 +273,7 @@ export function BoardView({ boardId }: { boardId: string }) {
   const { boardColor } = useBoardTheme();
   const palette = getBoardPalette(boardColor);
   const { columns, notes, setColumns, setNotes } = useBoardRealtime(boardId);
+  const { canEdit } = useBoardRole(boardId);
   const [activeNote, setActiveNote] = useState<Note | null>(null);
   const [newColumnName, setNewColumnName] = useState('');
   const [draggingNote, setDraggingNote] = useState<Note | null>(null);
@@ -466,18 +483,21 @@ export function BoardView({ boardId }: { boardId: string }) {
                   onDeleteNote={handleDeleteNote}
                   onRename={handleRenameColumn}
                   onDeleteColumn={handleDeleteColumn}
+                  canEdit={canEdit}
                 />
               );
             })}
 
-            <form onSubmit={handleAddColumn} className="w-56 shrink-0">
-              <input
-                value={newColumnName}
-                onChange={(e) => setNewColumnName(e.target.value)}
-                placeholder="+ Nueva columna"
-                className="w-full rounded-control border border-dashed border-border-strong bg-surface/60 px-2 py-1.5 text-sm text-ink"
-              />
-            </form>
+            {canEdit && (
+              <form onSubmit={handleAddColumn} className="w-56 shrink-0">
+                <input
+                  value={newColumnName}
+                  onChange={(e) => setNewColumnName(e.target.value)}
+                  placeholder="+ Nueva columna"
+                  className="w-full rounded-control border border-dashed border-border-strong bg-surface/60 px-2 py-1.5 text-sm text-ink"
+                />
+              </form>
+            )}
           </div>
 
           <DragOverlay modifiers={[offsetOverlayAboveCursor]}>
