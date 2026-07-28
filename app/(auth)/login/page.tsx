@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/src/modules/identity/data/supabaseClient';
 import { Button } from '@/src/modules/ui/Button';
 import { Input } from '@/src/modules/ui/Input';
+import { JanusLogoReveal } from '@/src/modules/ui/JanusLogoReveal';
 
 export default function LoginPage() {
   return (
@@ -71,12 +72,12 @@ function LoginForm() {
         onSubmit={handleSubmit}
         className="relative w-96 space-y-4 rounded-card border border-border bg-surface p-8 shadow-elevation-md"
       >
-        <div className="mb-2">
-          <div className="mb-3 h-8 w-8 rounded-control bg-accent-500" aria-hidden="true" />
-          <h1 className="text-2xl font-bold text-ink">
+        <div className="mb-2 flex flex-col items-center text-center">
+          <JanusLogoReveal iconSize={72} entranceSpeed={900} idleFloat={false} sheenEffect={false} />
+          <h1 className="mt-3 text-2xl font-bold text-ink">
             {mode === 'signIn' ? 'Iniciar sesión' : 'Crear cuenta'}
           </h1>
-          <p className="mt-1 text-sm text-ink-muted">
+          <p className="mt-1 text-center text-sm text-ink-muted">
             {mode === 'signIn' ? 'Ingresá a tus tableros.' : 'Empezá a organizar tus proyectos.'}
           </p>
         </div>
