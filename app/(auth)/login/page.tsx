@@ -23,7 +23,8 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get('next') ?? '/boards';
+  const rawNext = searchParams.get('next');
+  const next = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/boards';
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
