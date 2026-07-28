@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   closestCenter,
   DndContext,
@@ -17,9 +17,8 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { createClient } from '@/src/modules/identity/data/supabaseClient';
-import { getBoardColumns, addColumn, renameColumn, deleteColumn } from '../application/boardService';
+import { addColumn, renameColumn, deleteColumn } from '../application/boardService';
 import {
-  loadBoardNotes,
   addNote,
   updateNoteDetails,
   deleteNote,
@@ -36,6 +35,7 @@ import { NoteEditor } from './NoteEditor';
 import { BoardTabs } from './BoardTabs';
 import { BoardHeader } from './BoardHeader';
 import { MiniCalendarPanel } from './MiniCalendarPanel';
+import { useBoardRealtime } from './useBoardRealtime';
 import { useBoardTheme } from './BoardThemeContext';
 import { getBoardPalette } from '../domain/palette';
 import { Badge } from '@/src/modules/ui/Badge';
@@ -256,8 +256,7 @@ export function BoardView({ boardId }: { boardId: string }) {
   const supabase = createClient();
   const { boardColor } = useBoardTheme();
   const palette = getBoardPalette(boardColor);
-  const [columns, setColumns] = useState<Column[]>([]);
-  const [notes, setNotes] = useState<Note[]>([]);
+  const { columns, notes, setColumns, setNotes } = useBoardRealtime(boardId);
   const [activeNote, setActiveNote] = useState<Note | null>(null);
   const [newColumnName, setNewColumnName] = useState('');
   const [draggingNote, setDraggingNote] = useState<Note | null>(null);
@@ -266,16 +265,6 @@ export function BoardView({ boardId }: { boardId: string }) {
   const [arrival, setArrival] = useState<CalendarArrival | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
-
-  useEffect(() => {
-    async function load() {
-      const cols = await getBoardColumns(supabase, boardId);
-      setColumns(cols);
-      const loadedNotes = await loadBoardNotes(supabase, cols.map((c) => c.id));
-      setNotes(loadedNotes);
-    }
-    load();
-  }, [boardId]);
 
   function handleDragStart(event: DragStartEvent) {
     const note = notes.find((n) => n.id === event.active.id);
