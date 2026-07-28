@@ -1,7 +1,8 @@
 // src/modules/boards/ui/MembersPopover.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createClient } from '@/src/modules/identity/data/supabaseClient';
 import { useClickOutside } from '@/src/modules/ui/useClickOutside';
 import { useToast } from '@/src/modules/ui/Toast';
 import { UsersIcon, CloseIcon } from '@/src/modules/ui/icons';
@@ -47,8 +48,13 @@ export function MembersPopover({
   const [copied, setCopied] = useState(false);
   const [requesting, setRequesting] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
-  const [savingName, setSavingName] = useState(false);
+  const [editingName, setEditingName] = useState(false);
   const popoverRef = useClickOutside<HTMLDivElement>(() => setOpen(false));
+  const myRoleRef = useRef(myRole);
+
+  useEffect(() => {
+    myRoleRef.current = myRole;
+  }, [myRole]);
 
   useEffect(() => {
     if (!open && !isOwner) return;
@@ -56,6 +62,34 @@ export function MembersPopover({
       .then(setMembers)
       .catch(() => showToast('No se pudo cargar los miembros', 'danger'));
   }, [open, boardId, isOwner]);
+
+  // Lets a viewer find out their edit request was approved even if they
+  // never reopen the popover — no notifications table needed, just a
+  // realtime subscription scoped to their own membership row.
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`board-member-self:${boardId}:${myUserId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'board_members', filter: `user_id=eq.${myUserId}` },
+        (payload) => {
+          const row = payload.new as { board_id: string; role: BoardMemberRole; edit_requested: boolean };
+          if (row.board_id !== boardId) return;
+          if (myRoleRef.current === 'viewer' && row.role === 'editor') {
+            showToast('¡Tu solicitud de edición fue aprobada!');
+            setMembers((prev) =>
+              prev.map((m) => (m.userId === myUserId ? { ...m, role: 'editor', editRequested: false } : m))
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [boardId, myUserId]);
 
   const pendingCount = isOwner ? members.filter((m) => m.editRequested).length : 0;
   const myMembership = members.find((m) => m.userId === myUserId);
@@ -138,19 +172,23 @@ export function MembersPopover({
     }
   }
 
-  async function handleSaveName(e: React.FormEvent) {
-    e.preventDefault();
+  function startEditingName() {
+    setNameDraft(myMembership ? memberLabel(myMembership) : '');
+    setEditingName(true);
+  }
+
+  async function commitNameEdit() {
+    setEditingName(false);
     const trimmed = nameDraft.trim();
-    if (!trimmed) return;
-    setSavingName(true);
+    if (!trimmed || !myMembership || trimmed === memberLabel(myMembership)) return;
+    const previous = members;
+    setMembers((prev) => prev.map((m) => (m.userId === myUserId ? { ...m, displayName: trimmed } : m)));
     try {
       await setDisplayName(boardId, trimmed);
-      setMembers((prev) => prev.map((m) => (m.userId === myUserId ? { ...m, displayName: trimmed } : m)));
       showToast('Nombre guardado');
     } catch (err) {
+      setMembers(previous);
       showToast(err instanceof Error ? err.message : 'No se pudo guardar el nombre', 'danger');
-    } finally {
-      setSavingName(false);
     }
   }
 
@@ -182,7 +220,32 @@ export function MembersPopover({
           <div className="mb-3 flex max-h-48 flex-col gap-1 overflow-y-auto">
             {members.map((m) => (
               <div key={m.userId} className="flex items-center gap-2 rounded-control px-2 py-1.5 text-sm">
-                <span className="flex-1 truncate text-ink">{memberLabel(m)}</span>
+                {m.userId === myUserId && (myRole === 'editor' || myRole === 'owner') ? (
+                  editingName ? (
+                    <input
+                      autoFocus
+                      value={nameDraft}
+                      onChange={(e) => setNameDraft(e.target.value)}
+                      onBlur={commitNameEdit}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitNameEdit();
+                        if (e.key === 'Escape') setEditingName(false);
+                      }}
+                      className="flex-1 rounded-control border border-accent-500 bg-page px-1.5 py-0.5 text-sm text-ink focus:outline-none"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={startEditingName}
+                      className="flex-1 truncate text-left text-ink hover:underline"
+                      title="Editar tu nombre"
+                    >
+                      {memberLabel(m)}
+                    </button>
+                  )
+                ) : (
+                  <span className="flex-1 truncate text-ink">{memberLabel(m)}</span>
+                )}
                 {isOwner && m.editRequested && m.role !== 'owner' ? (
                   <>
                     <span className="text-xs font-medium text-warning">Pidió editar</span>
@@ -244,24 +307,6 @@ export function MembersPopover({
                 </button>
               )}
             </div>
-          )}
-
-          {(myRole === 'editor' || myRole === 'owner') && myMembership && !myMembership.displayName && (
-            <form onSubmit={handleSaveName} className="mb-2 flex gap-1">
-              <input
-                value={nameDraft}
-                onChange={(e) => setNameDraft(e.target.value)}
-                placeholder="¿Cómo querés que te vean?"
-                className="flex-1 rounded-control border border-border bg-page px-2 py-1 text-sm text-ink placeholder-ink-faint focus:border-accent-500 focus:outline-none"
-              />
-              <button
-                type="submit"
-                disabled={savingName}
-                className="rounded-control bg-accent-500 px-2 py-1 text-xs font-medium text-white transition-colors duration-150 ease-standard hover:bg-accent-600 disabled:opacity-50"
-              >
-                {savingName ? '...' : 'Guardar'}
-              </button>
-            </form>
           )}
 
           {isOwner && (

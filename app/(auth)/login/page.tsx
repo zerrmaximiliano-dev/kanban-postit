@@ -73,7 +73,7 @@ function LoginForm() {
         className="relative w-[28rem] space-y-4 rounded-card border border-border bg-surface p-8 shadow-elevation-md"
       >
         <div className="mb-2 flex flex-col items-center text-center">
-          <JanusLogoReveal iconSize={216} entranceSpeed={900} idleFloat={false} sheenEffect={false} />
+          <JanusLogoReveal iconSize={260} wordmarkSize={32} entranceSpeed={900} idleFloat={true} sheenEffect={true} />
           <h1 className="mt-3 text-2xl font-bold text-ink">
             {mode === 'signIn' ? 'Iniciar sesión' : 'Crear cuenta'}
           </h1>

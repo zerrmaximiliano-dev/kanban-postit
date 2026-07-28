@@ -6,12 +6,14 @@ import { useEffect, useState } from 'react';
 export function JanusLogoReveal({
   wordmark = 'JANUS',
   iconSize = 380,
+  wordmarkSize,
   entranceSpeed = 900,
   idleFloat = true,
   sheenEffect = true,
 }: {
   wordmark?: string;
   iconSize?: number;
+  wordmarkSize?: number;
   entranceSpeed?: number;
   idleFloat?: boolean;
   sheenEffect?: boolean;
@@ -29,7 +31,7 @@ export function JanusLogoReveal({
   }, [entranceSpeed]);
 
   const letters = wordmark.split('');
-  const wordmarkFontSize = (76 / 380) * iconSize;
+  const wordmarkFontSize = wordmarkSize ?? (76 / 380) * iconSize;
 
   return (
     <div className="flex flex-col items-center" style={{ gap: iconSize * (36 / 380) }}>
