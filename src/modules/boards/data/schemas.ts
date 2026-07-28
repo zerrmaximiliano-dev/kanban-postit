@@ -46,3 +46,9 @@ export const noteRowSchema = z.object({
   end_date: z.string().nullable(),
   order: z.number().int(),
 });
+
+export const noteDependencyRowSchema = z.object({
+  id: z.string().uuid(),
+  predecessor_note_id: z.string().uuid(),
+  successor_note_id: z.string().uuid(),
+});

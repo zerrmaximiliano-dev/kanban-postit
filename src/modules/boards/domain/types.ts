@@ -51,3 +51,9 @@ export interface Note {
   order: number;
   checklist: ChecklistItem[];
 }
+
+export interface NoteDependency {
+  id: string;
+  predecessorNoteId: string;
+  successorNoteId: string;
+}
