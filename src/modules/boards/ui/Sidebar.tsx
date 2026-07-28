@@ -93,8 +93,8 @@ export function Sidebar() {
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img src="/janus-icon.png" alt="Janus" className="h-10 w-10 object-contain" />
-          <p className="text-base font-semibold leading-tight text-white">Janus</p>
+          <img src="/janus-icon.png" alt="Janus" className="h-14 w-14 object-contain" />
+          <p className="text-xl font-semibold leading-tight text-white">Janus</p>
         </div>
         <button
           type="button"
