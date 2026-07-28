@@ -10,6 +10,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter);
   --font-note: var(--font-caveat);
+  --font-archivo: var(--font-archivo);
 
   /* Neutral surface/text scale */
   --color-page: #fafbfc;
@@ -78,4 +79,17 @@ body {
     transform: translateX(0);
     opacity: 1;
   }
+}
+
+@keyframes janus-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+@keyframes janus-sheen {
+  0% { transform: translateX(-120%) rotate(18deg); opacity: 0; }
+  8% { opacity: 0.55; }
+  45% { opacity: 0.35; }
+  60% { opacity: 0; }
+  100% { transform: translateX(120%) rotate(18deg); opacity: 0; }
 }
