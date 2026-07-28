@@ -6,6 +6,7 @@ import { createClient } from '@/src/modules/identity/data/supabaseClient';
 import { getBoard, renameBoard, updateBoardColor } from '../application/boardService';
 import { getBoardPalette, BOARD_COLOR_PRESETS } from '../domain/palette';
 import { useBoardTheme } from './BoardThemeContext';
+import { useBoardRole } from './useBoardRole';
 import { PaletteIcon } from '@/src/modules/ui/icons';
 import { useClickOutside } from '@/src/modules/ui/useClickOutside';
 import { MembersPopover } from './MembersPopover';
@@ -14,13 +15,14 @@ export function BoardHeader({ boardId }: { boardId: string }) {
   const supabase = createClient();
   const queryClient = useQueryClient();
   const { setBoardColor } = useBoardTheme();
+  const { role: myRole } = useBoardRole(boardId);
   const [name, setName] = useState<string | null>(null);
   const [color, setColor] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(null);
-  const [isOwner, setIsOwner] = useState(false);
+  const [myUserId, setMyUserId] = useState<string | null>(null);
   const pickerRef = useClickOutside<HTMLDivElement>(() => setPickerOpen(false));
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export function BoardHeader({ boardId }: { boardId: string }) {
       setColor(board.color);
       setBoardColor(board.color);
       setShareToken(board.shareToken);
-      setIsOwner(data.user?.id === board.ownerId);
+      setMyUserId(data.user?.id ?? null);
     });
     return () => {
       cancelled = true;
@@ -95,7 +97,9 @@ export function BoardHeader({ boardId }: { boardId: string }) {
       )}
 
       <div className="ml-auto flex items-center gap-2">
-        {shareToken && <MembersPopover boardId={boardId} isOwner={isOwner} shareToken={shareToken} />}
+        {shareToken && myUserId && (
+          <MembersPopover boardId={boardId} myRole={myRole} myUserId={myUserId} shareToken={shareToken} />
+        )}
         <div ref={pickerRef} className="relative">
           <button
             type="button"
