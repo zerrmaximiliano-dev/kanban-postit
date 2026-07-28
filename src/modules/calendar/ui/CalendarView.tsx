@@ -395,6 +395,7 @@ export function CalendarView({ boardId }: { boardId: string }) {
           onToggleChecklistItem={handleToggleChecklistItem}
           onEditChecklistItemText={handleEditChecklistItemText}
           onDeleteChecklistItem={handleDeleteChecklistItem}
+          readOnly={!canEdit}
         />
       )}
     </div>

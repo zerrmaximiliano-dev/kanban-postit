@@ -527,6 +527,7 @@ export function BoardView({ boardId }: { boardId: string }) {
             onToggleChecklistItem={handleToggleChecklistItem}
             onEditChecklistItemText={handleEditChecklistItemText}
             onDeleteChecklistItem={handleDeleteChecklistItem}
+            readOnly={!canEdit}
           />
         )}
       </div>

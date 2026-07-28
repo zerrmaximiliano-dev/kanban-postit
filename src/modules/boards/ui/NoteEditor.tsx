@@ -17,6 +17,7 @@ export function NoteEditor({
   onToggleChecklistItem,
   onEditChecklistItemText,
   onDeleteChecklistItem,
+  readOnly = false,
 }: {
   note: Note;
   onClose: () => void;
@@ -34,6 +35,7 @@ export function NoteEditor({
   onToggleChecklistItem?: (item: ChecklistItem, done: boolean) => void;
   onEditChecklistItemText?: (item: ChecklistItem, text: string) => void;
   onDeleteChecklistItem?: (item: ChecklistItem) => void;
+  readOnly?: boolean;
 }) {
   const [title, setTitle] = useState(note.title);
   const [description, setDescription] = useState(note.description);
@@ -112,7 +114,14 @@ export function NoteEditor({
         style={{ background: `radial-gradient(ellipse at top right, ${color}33 0%, var(--color-surface) 55%)` }}
         className="flex h-full w-full max-w-md flex-col gap-4 overflow-y-auto p-6 shadow-elevation-md animate-[drawer-in_250ms_ease-standard]"
       >
-        <Input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} label="Título" placeholder="Título de la nota" />
+        <Input
+          autoFocus
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          label="Título"
+          placeholder="Título de la nota"
+          disabled={readOnly}
+        />
         <div>
           <label className="mb-1.5 block text-xs font-medium text-ink-muted">Descripción</label>
           <textarea
@@ -121,6 +130,7 @@ export function NoteEditor({
             className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-ink transition-[border-color,box-shadow] duration-150 ease-standard focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-100"
             rows={3}
             placeholder="Descripción / observaciones"
+            disabled={readOnly}
           />
         </div>
 
@@ -132,9 +142,10 @@ export function NoteEditor({
                 key={c}
                 type="button"
                 onClick={() => setColor(c)}
+                disabled={readOnly}
                 style={{ backgroundColor: c }}
                 aria-label={`Color ${c}`}
-                className={`h-7 w-7 rounded-full transition-transform duration-150 ease-standard hover:scale-110 ${
+                className={`h-7 w-7 rounded-full transition-transform duration-150 ease-standard hover:scale-110 disabled:cursor-not-allowed disabled:hover:scale-100 ${
                   color === c ? 'ring-2 ring-accent-500 ring-offset-2' : 'ring-1 ring-black/10'
                 }`}
               />
@@ -143,6 +154,7 @@ export function NoteEditor({
               type="color"
               value={color}
               onChange={(e) => setColor(e.target.value)}
+              disabled={readOnly}
               aria-label="Color personalizado"
               className="h-7 w-9 cursor-pointer rounded-control border border-border p-0"
             />
@@ -154,6 +166,7 @@ export function NoteEditor({
           <select
             value={priority}
             onChange={(e) => setPriority(e.target.value as Priority)}
+            disabled={readOnly}
             className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-100"
           >
             <option value="low">Prioridad baja</option>
@@ -162,7 +175,13 @@ export function NoteEditor({
           </select>
         </div>
 
-        <Input value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} label="Tags" placeholder="Separados por coma" />
+        <Input
+          value={tagsInput}
+          onChange={(e) => setTagsInput(e.target.value)}
+          label="Tags"
+          placeholder="Separados por coma"
+          disabled={readOnly}
+        />
 
         <div>
           <p className="mb-1.5 text-xs font-medium text-ink-muted">Fechas (para el calendario)</p>
@@ -171,6 +190,7 @@ export function NoteEditor({
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
+              disabled={readOnly}
               className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-100"
               aria-label="Fecha de inicio"
             />
@@ -179,6 +199,7 @@ export function NoteEditor({
               value={endDate}
               min={startDate || undefined}
               onChange={(e) => setEndDate(e.target.value)}
+              disabled={readOnly}
               className="w-full rounded-control border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-100"
               aria-label="Fecha de fin"
             />
@@ -194,42 +215,48 @@ export function NoteEditor({
                   type="checkbox"
                   checked={item.done}
                   onChange={() => handleToggleItem(item)}
+                  disabled={readOnly}
                   className="h-4 w-4 shrink-0 accent-accent-500"
                 />
                 <input
                   value={item.text}
                   onChange={(e) => handleEditItemText(item, e.target.value)}
                   onBlur={() => commitItemText(item)}
+                  disabled={readOnly}
                   className={`w-full rounded-control border-none bg-transparent px-1 py-0.5 text-sm text-ink focus:bg-surface focus:ring-1 focus:ring-border-strong ${
                     item.done ? 'text-ink-faint line-through' : ''
                   }`}
                 />
-                <button
-                  type="button"
-                  onClick={() => handleDeleteItem(item)}
-                  className="shrink-0 text-ink-faint opacity-0 transition-opacity duration-150 ease-standard hover:text-danger group-hover:opacity-100"
-                  aria-label="Eliminar tarea"
-                >
-                  <TrashIcon className="h-3.5 w-3.5" />
-                </button>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteItem(item)}
+                    className="shrink-0 text-ink-faint opacity-0 transition-opacity duration-150 ease-standard hover:text-danger group-hover:opacity-100"
+                    aria-label="Eliminar tarea"
+                  >
+                    <TrashIcon className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
             ))}
           </div>
-          <form onSubmit={handleAddItem} className="mt-2 flex gap-2">
-            <input
-              value={newItemText}
-              onChange={(e) => setNewItemText(e.target.value)}
-              placeholder="Agregar tarea"
-              className="w-full rounded-control border border-border bg-surface px-3 py-1.5 text-sm text-ink focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-100"
-            />
-            <Button type="submit" variant="secondary" className="shrink-0">
-              Agregar
-            </Button>
-          </form>
+          {!readOnly && (
+            <form onSubmit={handleAddItem} className="mt-2 flex gap-2">
+              <input
+                value={newItemText}
+                onChange={(e) => setNewItemText(e.target.value)}
+                placeholder="Agregar tarea"
+                className="w-full rounded-control border border-border bg-surface px-3 py-1.5 text-sm text-ink focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-100"
+              />
+              <Button type="submit" variant="secondary" className="shrink-0">
+                Agregar
+              </Button>
+            </form>
+          )}
         </div>
 
         <div className="mt-auto flex items-center justify-between border-t border-border pt-4">
-          {onDelete ? (
+          {!readOnly && onDelete ? (
             <Button variant="danger" onClick={handleDelete}>
               <TrashIcon className="h-3.5 w-3.5" />
               Eliminar
@@ -239,9 +266,9 @@ export function NoteEditor({
           )}
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>
-              Cancelar
+              {readOnly ? 'Cerrar' : 'Cancelar'}
             </Button>
-            <Button onClick={handleSave}>Guardar</Button>
+            {!readOnly && <Button onClick={handleSave}>Guardar</Button>}
           </div>
         </div>
       </div>
