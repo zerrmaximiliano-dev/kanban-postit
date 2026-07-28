@@ -8,6 +8,7 @@ import { getBoardPalette, BOARD_COLOR_PRESETS } from '../domain/palette';
 import { useBoardTheme } from './BoardThemeContext';
 import { PaletteIcon } from '@/src/modules/ui/icons';
 import { useClickOutside } from '@/src/modules/ui/useClickOutside';
+import { MembersPopover } from './MembersPopover';
 
 export function BoardHeader({ boardId }: { boardId: string }) {
   const supabase = createClient();
@@ -18,17 +19,20 @@ export function BoardHeader({ boardId }: { boardId: string }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
   const pickerRef = useClickOutside<HTMLDivElement>(() => setPickerOpen(false));
 
   useEffect(() => {
     let cancelled = false;
-    getBoard(supabase, boardId).then((board) => {
-      if (!cancelled) {
-        setName(board.name);
-        setDraft(board.name);
-        setColor(board.color);
-        setBoardColor(board.color);
-      }
+    Promise.all([getBoard(supabase, boardId), supabase.auth.getUser()]).then(([board, { data }]) => {
+      if (cancelled) return;
+      setName(board.name);
+      setDraft(board.name);
+      setColor(board.color);
+      setBoardColor(board.color);
+      setShareToken(board.shareToken);
+      setIsOwner(data.user?.id === board.ownerId);
     });
     return () => {
       cancelled = true;
@@ -90,46 +94,49 @@ export function BoardHeader({ boardId }: { boardId: string }) {
         </h1>
       )}
 
-      <div ref={pickerRef} className="relative ml-auto">
-        <button
-          type="button"
-          onClick={() => setPickerOpen((open) => !open)}
-          className="flex h-9 w-9 items-center justify-center rounded-control border border-white/25 bg-white/10 text-white transition-colors duration-150 ease-standard hover:bg-white/20"
-          aria-label="Cambiar color del tablero"
-          title="Cambiar color del tablero"
-        >
-          <PaletteIcon />
-        </button>
-        {pickerOpen && (
-          <div className="absolute right-0 top-11 z-10 w-64 rounded-card border border-border bg-surface p-3 shadow-elevation-md">
-            <p className="mb-2 text-xs font-medium text-ink-muted">Color del tablero</p>
-            <div className="flex flex-wrap gap-2">
-              {BOARD_COLOR_PRESETS.map((preset) => (
-                <button
-                  key={preset.color}
-                  type="button"
-                  onClick={() => handlePickColor(preset.color)}
-                  style={{ backgroundColor: preset.color }}
-                  className={`h-7 w-7 rounded-full transition-transform duration-150 ease-standard hover:scale-110 ${
-                    color === preset.color ? 'ring-2 ring-accent-500 ring-offset-2' : 'ring-1 ring-black/10'
-                  }`}
-                  aria-label={`Color ${preset.name}`}
-                  title={preset.name}
+      <div className="ml-auto flex items-center gap-2">
+        {shareToken && <MembersPopover boardId={boardId} isOwner={isOwner} shareToken={shareToken} />}
+        <div ref={pickerRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setPickerOpen((open) => !open)}
+            className="flex h-9 w-9 items-center justify-center rounded-control border border-white/25 bg-white/10 text-white transition-colors duration-150 ease-standard hover:bg-white/20"
+            aria-label="Cambiar color del tablero"
+            title="Cambiar color del tablero"
+          >
+            <PaletteIcon />
+          </button>
+          {pickerOpen && (
+            <div className="absolute right-0 top-11 z-10 w-64 rounded-card border border-border bg-surface p-3 shadow-elevation-md">
+              <p className="mb-2 text-xs font-medium text-ink-muted">Color del tablero</p>
+              <div className="flex flex-wrap gap-2">
+                {BOARD_COLOR_PRESETS.map((preset) => (
+                  <button
+                    key={preset.color}
+                    type="button"
+                    onClick={() => handlePickColor(preset.color)}
+                    style={{ backgroundColor: preset.color }}
+                    className={`h-7 w-7 rounded-full transition-transform duration-150 ease-standard hover:scale-110 ${
+                      color === preset.color ? 'ring-2 ring-accent-500 ring-offset-2' : 'ring-1 ring-black/10'
+                    }`}
+                    aria-label={`Color ${preset.name}`}
+                    title={preset.name}
+                  />
+                ))}
+              </div>
+              <label className="mt-3 flex items-center gap-2 text-xs font-medium text-ink-muted">
+                Personalizado
+                <input
+                  type="color"
+                  value={color ?? '#1B4B5A'}
+                  onChange={(e) => handlePickColor(e.target.value)}
+                  aria-label="Color personalizado del tablero"
+                  className="h-7 w-9 cursor-pointer rounded-control border border-border p-0"
                 />
-              ))}
+              </label>
             </div>
-            <label className="mt-3 flex items-center gap-2 text-xs font-medium text-ink-muted">
-              Personalizado
-              <input
-                type="color"
-                value={color ?? '#1B4B5A'}
-                onChange={(e) => handlePickColor(e.target.value)}
-                aria-label="Color personalizado del tablero"
-                className="h-7 w-9 cursor-pointer rounded-control border border-border p-0"
-              />
-            </label>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

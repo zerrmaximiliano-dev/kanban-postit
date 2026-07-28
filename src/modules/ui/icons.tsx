@@ -94,6 +94,17 @@ export function CalendarIcon({ className = base }: IconProps) {
   );
 }
 
+export function UsersIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} aria-hidden="true">
+      <circle cx="7" cy="6.5" r="2.25" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M2.5 16c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx="14" cy="7" r="1.8" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M12.5 12.2c1.9.3 3 1.5 3 3.8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function SpinnerIcon({ className = base }: IconProps) {
   return (
     <svg viewBox="0 0 20 20" fill="none" className={`${className} animate-spin`} aria-hidden="true">
