@@ -70,7 +70,7 @@ function DraggableNote({ note, onOpen, onUnschedule }: { note: Note; onOpen: (n:
       {...attributes}
       {...listeners}
     >
-      <span className="min-w-0 flex-1 truncate" title={note.title}>
+      <span className="font-note min-w-0 flex-1 truncate text-sm font-bold" title={note.title}>
         {note.title}
       </span>
       <button
@@ -367,7 +367,7 @@ export function CalendarView({ boardId }: { boardId: string }) {
             {draggingNote && (
               <div
                 style={{ backgroundColor: draggingNote.color }}
-                className="max-w-40 truncate rounded-full py-1 px-2.5 text-xs font-medium text-ink shadow-elevation-md opacity-90"
+                className="font-note max-w-40 truncate rounded-full py-1 px-2.5 text-sm font-bold text-ink shadow-elevation-md opacity-90"
               >
                 {draggingNote.title}
               </div>
