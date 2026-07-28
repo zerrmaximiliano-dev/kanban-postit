@@ -57,7 +57,7 @@ export function Sidebar() {
         className="flex h-screen w-12 shrink-0 flex-col items-center gap-3 py-4 text-white"
         style={{ background: `linear-gradient(180deg, ${background}, color-mix(in srgb, ${background} 80%, black))` }}
       >
-        <div className="h-6 w-6 rounded-control bg-accent-500" aria-hidden="true" />
+        <img src="/janus-icon.png" alt="Janus" className="h-6 w-6 object-contain" />
         <button
           type="button"
           onClick={() => setCollapsed(false)}
@@ -77,8 +77,11 @@ export function Sidebar() {
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-control bg-accent-500" aria-hidden="true" />
-          <h2 className="text-xs font-bold uppercase tracking-wide text-white/70">Tableros</h2>
+          <img src="/janus-icon.png" alt="Janus" className="h-6 w-6 object-contain" />
+          <div>
+            <p className="text-sm font-semibold leading-tight text-white">Janus</p>
+            <h2 className="text-xs font-bold uppercase tracking-wide text-white/70">Tableros</h2>
+          </div>
         </div>
         <button
           type="button"
