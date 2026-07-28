@@ -105,6 +105,15 @@ export function UsersIcon({ className = base }: IconProps) {
   );
 }
 
+export function LogOutIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} aria-hidden="true">
+      <path d="M8 4H5.5a1.5 1.5 0 00-1.5 1.5v9A1.5 1.5 0 005.5 16H8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13 13.5L16.5 10 13 6.5M16.5 10H8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function SpinnerIcon({ className = base }: IconProps) {
   return (
     <svg viewBox="0 0 20 20" fill="none" className={`${className} animate-spin`} aria-hidden="true">

@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { createClient } from '@/src/modules/identity/data/supabaseClient';
 import { useBoards, useCreateBoard, useDeleteBoard } from './useBoards';
 import { useBoardTheme } from './BoardThemeContext';
 import { getBoardPalette } from '../domain/palette';
 import { Button } from '@/src/modules/ui/Button';
 import { Input } from '@/src/modules/ui/Input';
 import { useToast } from '@/src/modules/ui/Toast';
-import { ChevronsLeftIcon, ChevronsRightIcon, TrashIcon } from '@/src/modules/ui/icons';
+import { ChevronsLeftIcon, ChevronsRightIcon, LogOutIcon, TrashIcon } from '@/src/modules/ui/icons';
 import type { Board } from '../domain/types';
 
 export function Sidebar() {
@@ -34,6 +35,12 @@ export function Sidebar() {
       },
       onError: () => showToast('No se pudo crear el tablero', 'danger'),
     });
+  }
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
   }
 
   function handleDelete(board: Board) {
@@ -65,6 +72,15 @@ export function Sidebar() {
           aria-label="Mostrar barra lateral"
         >
           <ChevronsRightIcon />
+        </button>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="mt-auto rounded-control p-1.5 text-white/70 transition-colors duration-150 ease-standard hover:bg-white/10 hover:text-white"
+          aria-label="Cerrar sesión"
+          title="Cerrar sesión"
+        >
+          <LogOutIcon />
         </button>
       </aside>
     );
@@ -133,6 +149,15 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      <button
+        type="button"
+        onClick={handleSignOut}
+        className="flex items-center gap-2 rounded-control px-3 py-2 text-sm text-white/70 transition-colors duration-150 ease-standard hover:bg-white/10 hover:text-white"
+      >
+        <LogOutIcon className="h-4 w-4" />
+        Cerrar sesión
+      </button>
     </aside>
   );
 }
