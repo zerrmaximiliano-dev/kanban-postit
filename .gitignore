@@ -44,6 +44,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# supabase CLI local link state
+supabase/.temp/
+
 # superpowers
 .superpowers/
 .worktrees/
