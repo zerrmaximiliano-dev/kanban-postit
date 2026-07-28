@@ -17,6 +17,8 @@ export interface BoardMember {
   boardId: string;
   userId: string;
   invitedEmail: string | null;
+  displayName: string | null;
+  editRequested: boolean;
   role: BoardMemberRole;
   status: BoardMemberStatus;
 }

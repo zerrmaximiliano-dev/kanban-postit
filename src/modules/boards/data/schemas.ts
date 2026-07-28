@@ -13,6 +13,8 @@ export const boardMemberRowSchema = z.object({
   board_id: z.string().uuid(),
   user_id: z.string().uuid(),
   invited_email: z.string().nullable(),
+  display_name: z.string().nullable(),
+  edit_requested: z.boolean(),
   role: z.enum(['owner', 'editor', 'viewer']),
   status: z.enum(['pending', 'accepted']),
 });

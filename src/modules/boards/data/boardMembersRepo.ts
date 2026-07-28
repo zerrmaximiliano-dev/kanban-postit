@@ -9,6 +9,8 @@ function toBoardMember(row: unknown): BoardMember {
     boardId: parsed.board_id,
     userId: parsed.user_id,
     invitedEmail: parsed.invited_email,
+    displayName: parsed.display_name,
+    editRequested: parsed.edit_requested,
     role: parsed.role,
     status: parsed.status,
   };
@@ -94,4 +96,32 @@ export async function joinViaShareLink(client: SupabaseClient, token: string): P
   const { data, error } = await client.rpc('join_board_via_token', { token });
   if (error) throw error;
   return data as string;
+}
+
+export async function setEditRequested(
+  client: SupabaseClient,
+  boardId: string,
+  userId: string,
+  requested: boolean
+): Promise<void> {
+  const { error } = await client
+    .from('board_members')
+    .update({ edit_requested: requested })
+    .eq('board_id', boardId)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
+export async function setDisplayName(
+  client: SupabaseClient,
+  boardId: string,
+  userId: string,
+  displayName: string
+): Promise<void> {
+  const { error } = await client
+    .from('board_members')
+    .update({ display_name: displayName })
+    .eq('board_id', boardId)
+    .eq('user_id', userId);
+  if (error) throw error;
 }
