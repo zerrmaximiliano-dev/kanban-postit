@@ -1,4 +1,4 @@
--- supabase/migrations/0004b_board_members_fixes.sql
+-- supabase/migrations/0005_board_members_fixes.sql
 -- Follow-up fixes from code review of 0004_board_members.sql:
 --   1. boards.share_token had no uniqueness guarantee or index.
 --   2. security definer functions were executable by PUBLIC (including
