@@ -28,6 +28,7 @@ export function MembersPopover({
   const [members, setMembers] = useState<BoardMember[]>([]);
   const [email, setEmail] = useState('');
   const [inviting, setInviting] = useState(false);
+  const [copied, setCopied] = useState(false);
   const popoverRef = useClickOutside<HTMLDivElement>(() => setOpen(false));
 
   useEffect(() => {
@@ -81,6 +82,8 @@ export function MembersPopover({
     const url = `${window.location.origin}/join/${shareToken}`;
     navigator.clipboard.writeText(url);
     showToast('Link copiado');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   }
 
   return (
@@ -149,9 +152,13 @@ export function MembersPopover({
           <button
             type="button"
             onClick={copyShareLink}
-            className="w-full rounded-control border border-border px-2 py-1.5 text-xs font-medium text-ink-muted transition-colors duration-150 ease-standard hover:bg-page hover:text-ink"
+            className={`w-full rounded-control border px-2 py-1.5 text-xs font-medium transition-all duration-150 ease-standard ${
+              copied
+                ? 'scale-[0.97] border-accent-500 bg-accent-100 text-accent-600'
+                : 'border-border text-ink-muted hover:bg-page hover:text-ink'
+            }`}
           >
-            Copiar link para compartir
+            {copied ? 'Copiado ✓' : 'Copiar link para compartir'}
           </button>
         </div>
       )}
