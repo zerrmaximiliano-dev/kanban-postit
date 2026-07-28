@@ -1,12 +1,20 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/src/modules/identity/data/supabaseClient';
 import { Button } from '@/src/modules/ui/Button';
 import { Input } from '@/src/modules/ui/Input';
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,6 +22,8 @@ export default function LoginPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get('next') ?? '/boards';
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,7 +44,7 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      router.push('/boards');
+      router.push(next);
       return;
     }
 
@@ -44,7 +54,7 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-    router.push('/boards');
+    router.push(next);
   }
 
   return (
