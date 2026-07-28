@@ -37,13 +37,12 @@ const MONTH_LABELS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ];
-import { NoteCard } from '@/src/modules/boards/ui/NoteCard';
 import { NoteEditor } from '@/src/modules/boards/ui/NoteEditor';
 import { BoardTabs } from '@/src/modules/boards/ui/BoardTabs';
 import { BoardHeader } from '@/src/modules/boards/ui/BoardHeader';
 import { useBoardTheme } from '@/src/modules/boards/ui/BoardThemeContext';
 import { getBoardPalette } from '@/src/modules/boards/domain/palette';
-import { ChevronLeftIcon, ChevronRightIcon } from '@/src/modules/ui/icons';
+import { ChevronLeftIcon, ChevronRightIcon, CloseIcon } from '@/src/modules/ui/icons';
 import type { ChecklistItem, Note } from '@/src/modules/boards/domain/types';
 
 type ViewMode = 'month' | 'week';
@@ -65,17 +64,33 @@ function DraggableNote({ note, onOpen, onUnschedule }: { note: Note; onOpen: (n:
   return (
     <div
       ref={setNodeRef}
-      style={{ opacity: isDragging ? 0.4 : 1 }}
-      className="scale-90 origin-top-left"
+      onDoubleClick={() => onOpen(note)}
+      style={{ backgroundColor: note.color, opacity: isDragging ? 0.4 : 1 }}
+      className="group/pill relative mb-1 flex cursor-grab items-center gap-1 rounded-full py-1 pl-2.5 pr-1 text-xs font-medium text-ink transition-transform duration-150 ease-standard hover:-translate-y-px active:cursor-grabbing"
       {...attributes}
       {...listeners}
     >
-      <NoteCard note={note} onOpen={onOpen} onDelete={onUnschedule} deleteLabel="Quitar del calendario" />
+      <span className="min-w-0 flex-1 truncate" title={note.title}>
+        {note.title}
+      </span>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onUnschedule(note);
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-ink/50 opacity-0 transition-opacity duration-150 ease-standard hover:bg-black/10 hover:text-ink group-hover/pill:opacity-100"
+        aria-label="Quitar del calendario"
+        title="Quitar del calendario"
+      >
+        <CloseIcon className="h-2.5 w-2.5" />
+      </button>
     </div>
   );
 }
 
-const MAX_VISIBLE_NOTES = 3;
+const MAX_VISIBLE_NOTES = 4;
 
 function DayCell({
   bucket,
@@ -350,8 +365,11 @@ export function CalendarView({ boardId }: { boardId: string }) {
 
           <DragOverlay modifiers={[offsetOverlayAboveCursor]}>
             {draggingNote && (
-              <div className="w-40 scale-90 opacity-90">
-                <NoteCard note={draggingNote} onOpen={() => {}} />
+              <div
+                style={{ backgroundColor: draggingNote.color }}
+                className="max-w-40 truncate rounded-full py-1 px-2.5 text-xs font-medium text-ink shadow-elevation-md opacity-90"
+              >
+                {draggingNote.title}
               </div>
             )}
           </DragOverlay>
