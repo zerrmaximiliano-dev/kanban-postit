@@ -76,3 +76,39 @@ export async function removeMember(boardId: string, userId: string): Promise<voi
   const supabase = await createServerSupabaseClient();
   await boardMembersRepo.removeMember(supabase, boardId, userId);
 }
+
+export async function requestEditAccess(boardId: string): Promise<void> {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('No autenticado');
+
+  const myRole = await boardMembersRepo.getMyRole(supabase, boardId);
+  if (myRole !== 'viewer') throw new Error('Solo un miembro de solo lectura puede solicitar edición');
+
+  await boardMembersRepo.setEditRequested(supabase, boardId, user.id, true);
+}
+
+export async function approveEditRequest(boardId: string, userId: string): Promise<void> {
+  const supabase = await createServerSupabaseClient();
+  await boardMembersRepo.updateMemberRole(supabase, boardId, userId, 'editor');
+  await boardMembersRepo.setEditRequested(supabase, boardId, userId, false);
+}
+
+export async function rejectEditRequest(boardId: string, userId: string): Promise<void> {
+  const supabase = await createServerSupabaseClient();
+  await boardMembersRepo.setEditRequested(supabase, boardId, userId, false);
+}
+
+export async function setDisplayName(boardId: string, name: string): Promise<void> {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('No autenticado');
+
+  const myRole = await boardMembersRepo.getMyRole(supabase, boardId);
+  if (myRole === 'viewer' || myRole === null) throw new Error('Necesitás ser editor para elegir un nombre');
+
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error('El nombre no puede estar vacío');
+
+  await boardMembersRepo.setDisplayName(supabase, boardId, user.id, trimmed);
+}
