@@ -274,7 +274,7 @@ export function GanttView({ boardId }: { boardId: string }) {
                 ))}
               </svg>
 
-              {selectedArrow && (
+              {selectedArrow && canEdit && (
                 <button
                   type="button"
                   onClick={(e) => {
