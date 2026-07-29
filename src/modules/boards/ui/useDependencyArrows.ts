@@ -51,7 +51,15 @@ export function useDependencyArrows(
           midY: (y1 + y2) / 2,
         });
       }
-      setArrows(next);
+      setArrows((prev) => {
+        const isSame =
+          prev.length === next.length &&
+          next.every((arrow, i) => {
+            const p = prev[i];
+            return p !== undefined && p.id === arrow.id && p.d === arrow.d && p.midX === arrow.midX && p.midY === arrow.midY;
+          });
+        return isSame ? prev : next;
+      });
     }
 
     recompute();
