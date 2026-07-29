@@ -85,6 +85,12 @@ describe('computeBarLayout', () => {
     const layout = computeBarLayout(note, '2026-07-01', 'day');
     expect(layout).toEqual({ left: 0, width: 3 * 56 });
   });
+
+  it('clamps width to the minimum when endDate is before startDate', () => {
+    const note = makeNote({ startDate: '2026-07-05', endDate: '2026-07-01' });
+    const layout = computeBarLayout(note, '2026-07-01', 'day');
+    expect(layout).toEqual({ left: 4 * 56, width: 12 });
+  });
 });
 
 describe('groupDatedNotesByColumn', () => {
@@ -155,5 +161,15 @@ describe('computeTimelineSegments', () => {
       { label: 'Jul 2026', startOffsetDays: 0, widthDays: 7 },
       { label: 'Ago 2026', startOffsetDays: 7, widthDays: 5 },
     ]);
+  });
+
+  it('produces a full-month segment when the range starts on the 1st', () => {
+    const segments = computeTimelineSegments('2026-09-01', '2026-09-30', 'month');
+    expect(segments).toEqual([{ label: 'Sep 2026', startOffsetDays: 0, widthDays: 30 }]);
+  });
+
+  it('produces a single segment for a range entirely within one month', () => {
+    const segments = computeTimelineSegments('2026-09-10', '2026-09-20', 'month');
+    expect(segments).toEqual([{ label: 'Sep 2026', startOffsetDays: 0, widthDays: 11 }]);
   });
 });
