@@ -712,7 +712,18 @@ export function useDependencyArrows(
           midY: (y1 + y2) / 2,
         });
       }
-      setArrows(next);
+      // Bail out with the same reference when nothing changed, or the
+      // unconditional useLayoutEffect below (no dependency array, by
+      // design) would set a fresh array every render and loop forever.
+      setArrows((prev) => {
+        const isSame =
+          prev.length === next.length &&
+          next.every((arrow, i) => {
+            const p = prev[i];
+            return p !== undefined && p.id === arrow.id && p.d === arrow.d && p.midX === arrow.midX && p.midY === arrow.midY;
+          });
+        return isSame ? prev : next;
+      });
     }
 
     recompute();
