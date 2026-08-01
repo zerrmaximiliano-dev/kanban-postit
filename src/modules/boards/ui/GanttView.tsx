@@ -29,6 +29,7 @@ import {
   groupDatedNotesByColumn,
   hasConflict,
   pxPerDayForZoom,
+  wouldCreateCycle,
   type GanttZoom,
 } from '../domain/gantt';
 import type { ChecklistItem, Note } from '../domain/types';
@@ -60,6 +61,14 @@ export function GanttView({ boardId }: { boardId: string }) {
 
   const { dependencies, setDependencies } = useNoteDependencies(boardId, noteIds);
   const arrows = useDependencyArrows(containerRef, dependencies);
+
+  const connectTargetWouldCycle = useMemo(
+    () =>
+      connectingFrom !== null &&
+      connectTargetId !== null &&
+      wouldCreateCycle(dependencies, connectingFrom, connectTargetId),
+    [dependencies, connectingFrom, connectTargetId]
+  );
 
   const range = useMemo(() => computeDateRange(datedNotes), [datedNotes]);
   const pxPerDay = pxPerDayForZoom(zoom);
@@ -140,6 +149,10 @@ export function GanttView({ boardId }: { boardId: string }) {
       (d) => d.predecessorNoteId === predecessorNoteId && d.successorNoteId === successorNoteId
     );
     if (alreadyExists) return;
+    if (wouldCreateCycle(dependencies, predecessorNoteId, successorNoteId)) {
+      showToast('Esto crearía un ciclo de dependencias', 'danger');
+      return;
+    }
     try {
       const dep = await addDependency(supabase, predecessorNoteId, successorNoteId);
       setDependencies((prev) => [...prev, dep]);
@@ -292,6 +305,7 @@ export function GanttView({ boardId }: { boardId: string }) {
                             canEdit={canEdit}
                             zoom={zoom}
                             isConnectTarget={connectTargetId === note.id}
+                            isConnectTargetInvalid={connectTargetId === note.id && connectTargetWouldCycle}
                             onCommitDates={commitDates}
                             onStartConnect={setConnectingFrom}
                             onOpen={setActiveNote}
@@ -321,7 +335,7 @@ export function GanttView({ boardId }: { boardId: string }) {
                 {connectingFrom && connectStart && connectPointer && (
                   <path
                     d={`M ${connectStart.x} ${connectStart.y} L ${connectPointer.x} ${connectPointer.y}`}
-                    stroke={connectTargetId ? '#14b8a6' : '#94a3b8'}
+                    stroke={connectTargetWouldCycle ? '#ef4444' : connectTargetId ? '#14b8a6' : '#94a3b8'}
                     strokeWidth={2}
                     strokeDasharray="6 4"
                     strokeLinecap="round"

@@ -16,6 +16,7 @@ export function GanttBar({
   canEdit,
   zoom,
   isConnectTarget,
+  isConnectTargetInvalid,
   onCommitDates,
   onStartConnect,
   onOpen,
@@ -27,6 +28,7 @@ export function GanttBar({
   canEdit: boolean;
   zoom: GanttZoom;
   isConnectTarget?: boolean;
+  isConnectTargetInvalid?: boolean;
   onCommitDates: (noteId: string, startDate: string, endDate: string) => void;
   onStartConnect: (noteId: string) => void;
   onOpen: (note: Note) => void;
@@ -103,7 +105,13 @@ export function GanttBar({
       }}
       className={`group rounded-[5px] shadow-elevation-sm transition-shadow duration-100 ${
         conflict ? 'border-2 border-danger' : ''
-      } ${isConnectTarget ? 'ring-2 ring-accent-500 ring-offset-1' : ''}`}
+      } ${
+        isConnectTarget
+          ? isConnectTargetInvalid
+            ? 'ring-2 ring-danger ring-offset-1'
+            : 'ring-2 ring-accent-500 ring-offset-1'
+          : ''
+      }`}
       title={note.title}
     >
       {canEdit && (

@@ -102,6 +102,42 @@ export function hasConflict(note: Note, dependencies: NoteDependency[], notesByI
   });
 }
 
+// Detects whether inserting predecessorNoteId -> successorNoteId would close
+// a cycle, given the dependency edges that already exist. True if
+// successorNoteId can already reach predecessorNoteId by following existing
+// edges forward (or if they're the same note) — adding the new edge would
+// complete a loop.
+export function wouldCreateCycle(
+  dependencies: NoteDependency[],
+  predecessorNoteId: string,
+  successorNoteId: string
+): boolean {
+  if (predecessorNoteId === successorNoteId) return true;
+
+  const adjacency = new Map<string, string[]>();
+  for (const dep of dependencies) {
+    const list = adjacency.get(dep.predecessorNoteId);
+    if (list) {
+      list.push(dep.successorNoteId);
+    } else {
+      adjacency.set(dep.predecessorNoteId, [dep.successorNoteId]);
+    }
+  }
+
+  const visited = new Set<string>();
+  const stack = [successorNoteId];
+  while (stack.length > 0) {
+    const current = stack.pop() as string;
+    if (current === predecessorNoteId) return true;
+    if (visited.has(current)) continue;
+    visited.add(current);
+    for (const next of adjacency.get(current) ?? []) {
+      stack.push(next);
+    }
+  }
+  return false;
+}
+
 export interface TimelineSegment {
   label: string;
   startOffsetDays: number;

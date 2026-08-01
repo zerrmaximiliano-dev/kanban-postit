@@ -8,6 +8,7 @@ import {
   groupDatedNotesByColumn,
   hasConflict,
   computeTimelineSegments,
+  wouldCreateCycle,
 } from './gantt';
 import type { Column, Note, NoteDependency } from './types';
 
@@ -171,5 +172,33 @@ describe('computeTimelineSegments', () => {
   it('produces a single segment for a range entirely within one month', () => {
     const segments = computeTimelineSegments('2026-09-10', '2026-09-20', 'month');
     expect(segments).toEqual([{ label: 'Sep 2026', startOffsetDays: 0, widthDays: 11 }]);
+  });
+});
+
+describe('wouldCreateCycle', () => {
+  it('is true for a note depending on itself', () => {
+    expect(wouldCreateCycle([], 'a', 'a')).toBe(true);
+  });
+
+  it('is false with no existing dependencies', () => {
+    expect(wouldCreateCycle([], 'a', 'b')).toBe(false);
+  });
+
+  it('is true for a direct 2-cycle (B already depends on A, now linking A depends on B)', () => {
+    const deps: NoteDependency[] = [{ id: 'd1', predecessorNoteId: 'b', successorNoteId: 'a' }];
+    expect(wouldCreateCycle(deps, 'a', 'b')).toBe(true);
+  });
+
+  it('is true for an indirect cycle through a longer chain (A -> B -> C, now linking C -> A)', () => {
+    const deps: NoteDependency[] = [
+      { id: 'd1', predecessorNoteId: 'a', successorNoteId: 'b' },
+      { id: 'd2', predecessorNoteId: 'b', successorNoteId: 'c' },
+    ];
+    expect(wouldCreateCycle(deps, 'c', 'a')).toBe(true);
+  });
+
+  it('is false for a valid new link that does not close a loop', () => {
+    const deps: NoteDependency[] = [{ id: 'd1', predecessorNoteId: 'a', successorNoteId: 'b' }];
+    expect(wouldCreateCycle(deps, 'a', 'c')).toBe(false);
   });
 });
