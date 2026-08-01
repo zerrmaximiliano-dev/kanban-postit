@@ -15,6 +15,7 @@ export function GanttBar({
   conflict,
   canEdit,
   zoom,
+  isConnectTarget,
   onCommitDates,
   onStartConnect,
   onOpen,
@@ -25,6 +26,7 @@ export function GanttBar({
   conflict: boolean;
   canEdit: boolean;
   zoom: GanttZoom;
+  isConnectTarget?: boolean;
   onCommitDates: (noteId: string, startDate: string, endDate: string) => void;
   onStartConnect: (noteId: string) => void;
   onOpen: (note: Note) => void;
@@ -99,7 +101,9 @@ export function GanttBar({
         height: BAR_HEIGHT,
         backgroundColor: note.color,
       }}
-      className={`group rounded-[5px] shadow-elevation-sm ${conflict ? 'border-2 border-danger' : ''}`}
+      className={`group rounded-[5px] shadow-elevation-sm transition-shadow duration-100 ${
+        conflict ? 'border-2 border-danger' : ''
+      } ${isConnectTarget ? 'ring-2 ring-accent-500 ring-offset-1' : ''}`}
       title={note.title}
     >
       {canEdit && (

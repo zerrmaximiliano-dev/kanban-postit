@@ -93,3 +93,7 @@ body {
   60% { opacity: 0; }
   100% { transform: translateX(120%) rotate(18deg); opacity: 0; }
 }
+
+@keyframes gantt-connect-dash {
+  to { stroke-dashoffset: -20; }
+}

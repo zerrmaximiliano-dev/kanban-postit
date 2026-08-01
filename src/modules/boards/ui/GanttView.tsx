@@ -47,6 +47,9 @@ export function GanttView({ boardId }: { boardId: string }) {
   const [zoom, setZoom] = useState<GanttZoom>('week');
   const [activeNote, setActiveNote] = useState<Note | null>(null);
   const [connectingFrom, setConnectingFrom] = useState<string | null>(null);
+  const [connectStart, setConnectStart] = useState<{ x: number; y: number } | null>(null);
+  const [connectPointer, setConnectPointer] = useState<{ x: number; y: number } | null>(null);
+  const [connectTargetId, setConnectTargetId] = useState<string | null>(null);
   const [selectedDependencyId, setSelectedDependencyId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -64,18 +67,59 @@ export function GanttView({ boardId }: { boardId: string }) {
   const totalWidth =
     LABEL_COLUMN_WIDTH + segments.reduce((sum, seg) => sum + seg.widthDays * pxPerDay, 0);
 
+  // Live drag-to-connect feedback: while connectingFrom is set, a dashed
+  // "ghost" line follows the cursor from the source bar's edge, and the bar
+  // currently under the cursor gets a ring highlight — so the user can see
+  // exactly where the link will land before releasing, instead of guessing.
   useEffect(() => {
-    if (!connectingFrom) return;
+    if (!connectingFrom) {
+      setConnectStart(null);
+      setConnectPointer(null);
+      setConnectTargetId(null);
+      return;
+    }
+
+    function toContainerPoint(clientX: number, clientY: number) {
+      const container = containerRef.current;
+      if (!container) return null;
+      const rect = container.getBoundingClientRect();
+      return { x: clientX - rect.left + container.scrollLeft, y: clientY - rect.top + container.scrollTop };
+    }
+
+    const container = containerRef.current;
+    const fromEl = container?.querySelector<HTMLElement>(`[data-note-id="${connectingFrom}"]`);
+    if (container && fromEl) {
+      const containerRect = container.getBoundingClientRect();
+      const fromRect = fromEl.getBoundingClientRect();
+      setConnectStart({
+        x: fromRect.right - containerRect.left + container.scrollLeft,
+        y: fromRect.top + fromRect.height / 2 - containerRect.top + container.scrollTop,
+      });
+    }
+
+    function handleWindowPointerMove(e: PointerEvent) {
+      setConnectPointer(toContainerPoint(e.clientX, e.clientY));
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const targetNoteId = el?.closest<HTMLElement>('[data-note-id]')?.dataset.noteId;
+      setConnectTargetId(targetNoteId && targetNoteId !== connectingFrom ? targetNoteId : null);
+    }
+
     function handleWindowPointerUp(e: PointerEvent) {
       const el = document.elementFromPoint(e.clientX, e.clientY);
       const targetNoteId = el?.closest<HTMLElement>('[data-note-id]')?.dataset.noteId;
+      const from = connectingFrom;
       setConnectingFrom(null);
-      if (targetNoteId) {
-        handleCreateDependency(connectingFrom!, targetNoteId);
+      if (targetNoteId && from) {
+        handleCreateDependency(from, targetNoteId);
       }
     }
+
+    window.addEventListener('pointermove', handleWindowPointerMove);
     window.addEventListener('pointerup', handleWindowPointerUp, { once: true });
-    return () => window.removeEventListener('pointerup', handleWindowPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handleWindowPointerMove);
+      window.removeEventListener('pointerup', handleWindowPointerUp);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectingFrom]);
 
@@ -99,6 +143,7 @@ export function GanttView({ boardId }: { boardId: string }) {
     try {
       const dep = await addDependency(supabase, predecessorNoteId, successorNoteId);
       setDependencies((prev) => [...prev, dep]);
+      showToast('Dependencia creada');
     } catch {
       showToast('No se pudo crear la dependencia', 'danger');
     }
@@ -246,6 +291,7 @@ export function GanttView({ boardId }: { boardId: string }) {
                             conflict={conflict}
                             canEdit={canEdit}
                             zoom={zoom}
+                            isConnectTarget={connectTargetId === note.id}
                             onCommitDates={commitDates}
                             onStartConnect={setConnectingFrom}
                             onOpen={setActiveNote}
@@ -272,6 +318,18 @@ export function GanttView({ boardId }: { boardId: string }) {
                     }}
                   />
                 ))}
+                {connectingFrom && connectStart && connectPointer && (
+                  <path
+                    d={`M ${connectStart.x} ${connectStart.y} L ${connectPointer.x} ${connectPointer.y}`}
+                    stroke={connectTargetId ? '#14b8a6' : '#94a3b8'}
+                    strokeWidth={2}
+                    strokeDasharray="6 4"
+                    strokeLinecap="round"
+                    fill="none"
+                    opacity={0.75}
+                    className="animate-[gantt-connect-dash_0.6s_linear_infinite]"
+                  />
+                )}
               </svg>
 
               {selectedArrow && canEdit && (
